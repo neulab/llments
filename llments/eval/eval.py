@@ -1,4 +1,3 @@
-
 import abc
 import dataclasses
 
@@ -6,7 +5,7 @@ import dataclasses
 class PairwiseEvaluator:
     """A class that defines an evaluation function, assessing a hypothesized string."""
 
-    @abc.abstractclassmethod
+    @abc.abstractmethod
     def evaluate(self, hyp: str, ref: str) -> float:
         """Returns an evaluation score between 0 and 1 for two strings.
 
@@ -25,7 +24,7 @@ class EvaluatorMetadata:
 class GeneralEvaluator:
     """A class that defines an evaluation function, assessing a hypothesized string."""
 
-    @abc.abstractclassmethod
+    @abc.abstractmethod
     def evaluate(self, hyp: str, ref: EvaluatorMetadata) -> float:
         """Returns an evaluation score between 0 and 1 for two strings.
 
