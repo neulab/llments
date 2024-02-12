@@ -1,3 +1,4 @@
+from typing import Any
 from llments.lm.lm import LanguageModel
 import random
 import json
@@ -10,10 +11,10 @@ class EmpiricalDistribution(LanguageModel):
             probs = [1 / len(data)] * len(data)
         self.data = pd.DataFrame({"text": data, "prob": probs})
 
-    def sample(self, condition: str | None):
+    def generate(self, condition: str | None, **kwargs: Any) -> str:
         """Sample from the language model, possibly conditioned on a prefix."""
         if condition is None:
-            return random.choice(self.data["text"], p=self.data["probs"])
+            return random.choices(self.data["text"], weights=self.data["probs"])[0]
         else:
             # Filter to only those that start with the condition
             filtered_df = self.data[self.data["text"].str.startswith(condition)]
@@ -24,9 +25,9 @@ class EmpiricalDistribution(LanguageModel):
                 )
             # Normalize the probabilities
             filtered_df["prob"] = filtered_df["prob"] / filtered_df["prob"].sum()
-            return random.choice(filtered_df["text"], p=filtered_df["probs"])
+            return random.choices(filtered_df["text"], weights=filtered_df["probs"])[0]
 
-    def fit(self, target: LanguageModel):
+    def fit(self, target: LanguageModel, task_description: str | None = None):
         raise ValueError(
             "Cannot fit an empirical distribution to another distribution."
         )
