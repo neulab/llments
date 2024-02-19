@@ -2,7 +2,7 @@ import abc
 
 
 class LanguageModel:
-    @abc.abstractclassmethod
+    @abc.abstractmethod
     def generate(
         self,
         condition: str | None,
@@ -11,7 +11,7 @@ class LanguageModel:
         """Generate from the language model, possibly conditioned on a prefix."""
         ...
 
-    @abc.abstractclassmethod
+    @abc.abstractmethod
     def fit(
         self, target: "LanguageModel", task_description: str | None = None
     ) -> "LanguageModel":

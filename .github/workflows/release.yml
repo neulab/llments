@@ -1,10 +1,9 @@
+---
 name: Release workflow
-
-on:
+on:  # yamllint disable-line rule:truthy
   push:
     tags:
       - "v[0123456789].*"
-
 jobs:
   release:
     runs-on: ubuntu-latest

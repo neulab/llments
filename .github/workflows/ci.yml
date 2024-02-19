@@ -1,5 +1,6 @@
+---
 name: Continuous Integration
-on: # yamllint disable-line rule:truthy
+on:  # yamllint disable-line rule:truthy
   push:
     branches:
       - main
@@ -18,7 +19,7 @@ jobs:
       - name: Install ruff
         run: pip install ruff
       - name: Run ruff
-        run: ruff --check .
+        run: ruff check .
   python-mypy:
     runs-on: ubuntu-latest
     steps:
@@ -31,14 +32,6 @@ jobs:
         uses: pre-commit/action@v3.0.0
         with:
           extra_args: mypy --all-files
-  lint-requirements-txt:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: lint
-        uses: pre-commit/action@v3.0.0
-        with:
-          extra_args: requirements-txt-fixer --all-files
   lint-markdown:
     runs-on: ubuntu-latest
     steps:
@@ -75,19 +68,3 @@ jobs:
         uses: pre-commit/action@v3.0.0
         with:
           extra_args: shellcheck --all-files
-  lint-trailing-whitespace:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: lint
-        uses: pre-commit/action@v3.0.0
-        with:
-          extra_args: trailing-whitespace --all-files
-  lint-eof-newline:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: lint
-        uses: pre-commit/action@v3.0.0
-        with:
-          extra_args: end-of-file-fixer --all-files
