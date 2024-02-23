@@ -4,7 +4,6 @@ build-backend = "hatchling.build"
 
 [project]
 name = "llments"
-version = "0.0.1"
 authors = [
     {name = "Graham Neubig", email = "neubig@gmail.com"},
 ]
@@ -31,5 +30,5 @@ dev = [
 [project.urls]
 repository = "https://github.com/neulab/llments"
 
-[project.scripts]
-llments-cli = "llments:main"
+[tool.setuptools.dynamic]
+version = {attr = "llments.version.VERSION"}
