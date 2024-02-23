@@ -30,5 +30,5 @@ dev = [
 [project.urls]
 repository = "https://github.com/neulab/llments"
 
-[tool.setuptools.dynamic]
-version = {attr = "llments.version.VERSION"}
+[tool.hatch.version]
+path = "llments/version.py"
