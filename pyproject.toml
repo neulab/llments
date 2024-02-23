@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "llments"
@@ -10,11 +10,12 @@ authors = [
 description = "llments"
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "MIT"}
 classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent"
 ]
 dependencies = [
     "pandas",
@@ -25,6 +26,9 @@ dynamic = ["version"]
 dev = [
     "pre-commit"
 ]
+
+[project.urls]
+repository = "https://github.com/neulab/llments"
 
 [tool.setuptools.dynamic]
 version = {attr = "llments.version.VERSION"}
