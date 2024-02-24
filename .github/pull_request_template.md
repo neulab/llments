@@ -1,10 +1,10 @@
-# Description
+## Description
 
 <!-- EDIT HERE:
 Write a brief description of this change.
 -->
 
-# References
+## References
 
 <!-- Add any reference material here, and delete any that aren't relevant -->
 
