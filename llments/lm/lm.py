@@ -40,7 +40,7 @@ class LanguageModel:
         ...
 
     @abc.abstractmethod
-    def sample(self, condition: str | None = None, **kwargs) -> str:
+    def sample(self, condition: str | None, **kwargs) -> str:
         """Sample an output given the language model.
 
         Returns:

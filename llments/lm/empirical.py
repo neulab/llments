@@ -34,11 +34,11 @@ class EmpiricalDistribution(LanguageModel):
 
     def calculate_probability(self, x: str) -> float:
         # Implementation logic
-        return 0.0
+        raise NotImplementedError("This is not implemented yet.")
 
-    def sample(self, condition: str | None = None, **kwargs) -> str:
+    def sample(self, condition: str | None, **kwargs) -> str:
         # Implementation logic
-        return ""
+        raise NotImplementedError("This is not implemented yet.")
 
 
 def load_from_text_file(text_file: str):
