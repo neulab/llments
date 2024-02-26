@@ -28,7 +28,7 @@ class LanguageModel:
         ...
 
     @abc.abstractmethod
-    def calculcate_probability(self, output: str) -> float:
+    def calculate_probability(self, output: str) -> float:
         """Calculate the probability of an output given the language model.
 
         Args:
@@ -37,13 +37,13 @@ class LanguageModel:
         Returns:
             float: The probability of output x given the language model.
         """
-        pass
+        ...
 
     @abc.abstractmethod
-    def sample(self) -> str:
+    def sample(self, condition: str | None = None, **kwargs) -> str:
         """Sample an output given the language model.
 
         Returns:
             str: A sampled output sequence from the language model.
         """
-        pass
+        ...
