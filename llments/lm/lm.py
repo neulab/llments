@@ -37,7 +37,7 @@ class LanguageModel:
         Returns:
             float: The probability of output x given the language model.
         """
-        ...
+        pass
 
     @abc.abstractmethod
     def sample(self) -> str:
@@ -46,4 +46,4 @@ class LanguageModel:
         Returns:
             str: A sampled output sequence from the language model.
         """
-        ...
+        pass
