@@ -21,7 +21,7 @@ class EvaluatorMetadata:
     ...
 
 
-class GeneralEvaluator:
+class Evaluator:
     """A class that defines an evaluation function, assessing a hypothesized string."""
 
     @abc.abstractmethod
