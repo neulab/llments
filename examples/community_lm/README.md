@@ -21,7 +21,7 @@ If you use this example, we would appreciate if you acknowledge
       Mihir Bansal and
       Qingyang Liu and
       Rohan Modi and
-      Xinran Wang
+      Xinran Wan
     ",
     year = "2024",
     howpublished = "https://github.com/neulab/llments",
