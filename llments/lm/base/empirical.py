@@ -32,6 +32,14 @@ class EmpiricalDistribution(LanguageModel):
             "Cannot fit an empirical distribution to another distribution."
         )
 
+    def calculate_probability(self, x: str) -> float:
+        # Implementation logic
+        raise NotImplementedError("This is not implemented yet.")
+
+    def sample(self, condition: str | None, **kwargs) -> str:
+        # Implementation logic
+        raise NotImplementedError("This is not implemented yet.")
+
 
 def load_from_text_file(text_file: str):
     """Load the distribution from a text file."""
