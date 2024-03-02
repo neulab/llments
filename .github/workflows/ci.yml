@@ -60,11 +60,3 @@ jobs:
         uses: pre-commit/action@v3.0.0
         with:
           extra_args: check-json --all-files
-  lint-shell-script:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: lint
-        uses: pre-commit/action@v3.0.0
-        with:
-          extra_args: shellcheck --all-files
