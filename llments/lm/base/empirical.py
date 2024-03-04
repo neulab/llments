@@ -1,4 +1,3 @@
-from typing import Any
 from llments.lm.lm import LanguageModel
 import random
 import json
@@ -11,21 +10,37 @@ class EmpiricalDistribution(LanguageModel):
             probs = [1 / len(data)] * len(data)
         self.data = pd.DataFrame({"text": data, "prob": probs})
 
-    def generate(self, condition: str | None, **kwargs: Any) -> str:
-        """Sample from the language model, possibly conditioned on a prefix."""
-        if condition is None:
-            return random.choices(self.data["text"], weights=self.data["probs"])[0]
-        else:
-            # Filter to only those that start with the condition
+    def generate(
+        self,
+        condition: str | None,
+        do_sample: bool = False,
+        max_length: int | None = None,
+        temperature: float = 1.0,
+        num_return_sequences: int = 1,
+    ) -> list[str]:
+        """See base class."""
+        filtered_df = self.data
+        # Adjust distribution
+        if condition:
             filtered_df = self.data[self.data["text"].str.startswith(condition)]
-            if filtered_df.empty:
-                raise ValueError(
-                    f"Condition {condition} does not match any strings in the "
-                    "distribution."
-                )
-            # Normalize the probabilities
-            filtered_df["prob"] = filtered_df["prob"] / filtered_df["prob"].sum()
-            return random.choices(filtered_df["text"], weights=filtered_df["probs"])[0]
+        if not do_sample:
+            raise NotImplementedError("Greedy decoding is not implemented yet.")
+        if max_length is not None:
+            filtered_df = filtered_df[
+                filtered_df["text"].str.split().len() <= max_length
+            ]
+        if temperature != 1.0:
+            raise NotImplementedError("Temperature is not implemented yet.")
+        if filtered_df.empty:
+            raise ValueError(
+                f"Condition {condition} does not match any strings in the "
+                "distribution."
+            )
+        # Normalize the probabilities
+        filtered_df["prob"] = filtered_df["prob"] / filtered_df["prob"].sum()
+        return random.choices(
+            filtered_df["text"], weights=filtered_df["probs"], k=num_return_sequences
+        )[0]
 
     def fit(self, target: LanguageModel, task_description: str | None = None):
         raise ValueError(
@@ -33,10 +48,6 @@ class EmpiricalDistribution(LanguageModel):
         )
 
     def calculate_probability(self, x: str) -> float:
-        # Implementation logic
-        raise NotImplementedError("This is not implemented yet.")
-
-    def sample(self, condition: str | None, **kwargs) -> str:
         # Implementation logic
         raise NotImplementedError("This is not implemented yet.")
 
