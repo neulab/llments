@@ -51,6 +51,9 @@ class EmpiricalDistribution(LanguageModel):
         # Implementation logic
         raise NotImplementedError("This is not implemented yet.")
 
+    def set_seed(self, seed: int):
+        random.seed(seed)
+
 
 def load_from_text_file(text_file: str):
     """Load the distribution from a text file."""

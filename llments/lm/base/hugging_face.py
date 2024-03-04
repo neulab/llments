@@ -1,5 +1,5 @@
 from llments.lm.lm import LanguageModel
-from transformers import pipeline
+from transformers import pipeline, set_seed
 
 
 class HuggingFaceLM(LanguageModel):
@@ -63,6 +63,14 @@ class HuggingFaceLM(LanguageModel):
             clean_up_tokenization_spaces=True,
         )
         return [res["generated_text"] for res in results]
+
+    def set_seed(self, seed: int):
+        """Set the seed for the language model.
+
+        Args:
+            seed: The seed to set for the language model.
+        """
+        set_seed(seed)
 
 
 def load_from_spec(spec_file: str) -> HuggingFaceLM:
