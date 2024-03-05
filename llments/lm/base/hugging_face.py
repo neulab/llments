@@ -64,7 +64,6 @@ class HuggingFaceLM(LanguageModel):
             num_return_sequences=num_return_sequences,
             clean_up_tokenization_spaces=True,
             truncation=max_length is not None,
-            pad_token_id=50256,  # to remove a warning
         )
         return [res["generated_text"] for res in results]
 
