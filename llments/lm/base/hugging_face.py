@@ -14,7 +14,7 @@ class HuggingFaceLM(LanguageModel):
             device: The device to run the model on.
         """
         try:
-            from transformers import pipeline, set_seed, TextGenerationPipeline
+            from transformers import pipeline, TextGenerationPipeline
         except ImportError:
             raise ImportError(
                 "You need to install the `transformers` package to use this class."
@@ -78,6 +78,12 @@ class HuggingFaceLM(LanguageModel):
         Args:
             seed: The seed to set for the language model.
         """
+        try:
+            from transformers import set_seed
+        except ImportError:
+            raise ImportError(
+                "You need to install the `transformers` package to use this class."
+            )
         set_seed(seed)
 
 
