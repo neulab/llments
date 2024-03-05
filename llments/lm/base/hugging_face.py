@@ -1,5 +1,5 @@
 from llments.lm.lm import LanguageModel
-from transformers import pipeline, set_seed
+from transformers import pipeline, set_seed, TextGenerationPipeline
 
 
 class HuggingFaceLM(LanguageModel):
@@ -14,7 +14,9 @@ class HuggingFaceLM(LanguageModel):
             model: The name of the model.
             device: The device to run the model on.
         """
-        self.text_generator = pipeline("text-generation", model=model, device=device)
+        self.text_generator: TextGenerationPipeline = pipeline(
+            "text-generation", model=model, device=device
+        )
 
     def fit(
         self, target: LanguageModel, task_description: str | None = None
@@ -61,6 +63,8 @@ class HuggingFaceLM(LanguageModel):
             temperature=temperature,
             num_return_sequences=num_return_sequences,
             clean_up_tokenization_spaces=True,
+            truncation=max_length is not None,
+            pad_token_id=50256,  # to remove a warning
         )
         return [res["generated_text"] for res in results]
 
