@@ -25,19 +25,18 @@ class LanguageModel:
     ) -> list[str]:
         """Generate an output given the language model.
 
-                Args:
-                    condition: The conditioning sequence for the output.
-                        If None, the output is not conditioned.
-                    do_sample: Whether to use sampling or greedy decoding.
-                    max_length: The maximum length of the output sequence,
-                        (defaults to model max).
-                    temperature: The value used to module the next token probabilities.
-                    num_return_sequences: The number of independently computed returned
-                        sequences for each element in the batch.
+        Args:
+            condition: The conditioning sequence for the output.
+                If None, the output is not conditioned.
+            do_sample: Whether to use sampling or greedy decoding.
+            max_length: The maximum length of the output sequence,
+                (defaults to model max).
+            temperature: The value used to module the next token probabilities.
+            num_return_sequences: The number of independently computed returned
+                sequences for each element in the batch.
 
-                Returns:
-                    str: Sampled output sequences from the language model.
-        <<<<<<< HEAD
+        Returns:
+            str: Sampled output sequences from the language model.
         """
         ...
 
