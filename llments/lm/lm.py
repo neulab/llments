@@ -39,3 +39,12 @@ class LanguageModel:
             str: Sampled output sequences from the language model.
         """
         ...
+
+    @abc.abstractmethod
+    def set_seed(self, seed: int):
+        """Set the seed for the language model.
+
+        Args:
+            seed: The seed to set for the language model.
+        """
+        ...
