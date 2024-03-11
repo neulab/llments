@@ -1,5 +1,4 @@
 from llments.lm.lm import LanguageModel
-from transformers import pipeline, set_seed, TextGenerationPipeline
 
 
 class HuggingFaceLM(LanguageModel):
@@ -14,6 +13,12 @@ class HuggingFaceLM(LanguageModel):
             model: The name of the model.
             device: The device to run the model on.
         """
+        try:
+            from transformers import pipeline, TextGenerationPipeline
+        except ImportError:
+            raise ImportError(
+                "You need to install the `transformers` package to use this class."
+            )
         self.text_generator: TextGenerationPipeline = pipeline(
             "text-generation", model=model, device=device
         )
@@ -73,6 +78,12 @@ class HuggingFaceLM(LanguageModel):
         Args:
             seed: The seed to set for the language model.
         """
+        try:
+            from transformers import set_seed
+        except ImportError:
+            raise ImportError(
+                "You need to install the `transformers` package to use this class."
+            )
         set_seed(seed)
 
 
