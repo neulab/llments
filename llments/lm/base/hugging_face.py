@@ -1,14 +1,20 @@
 from llments.lm.lm import LanguageModel
+from transformers import pipeline
 
 
 class HuggingFaceLM(LanguageModel):
-    def sample(
+    def __init__(
         self,
-        condition: str | None,
-        **kwargs,
-    ) -> str:
-        """Generate from the language model, possibly conditioned on a prefix."""
-        raise NotImplementedError("This is not implemented yet.")
+        model: str,
+        device: str | None = None,
+    ):
+        """Initialize a HuggingFaceLM.
+
+        Args:
+            model: The name of the model.
+            device: The device to run the model on.
+        """
+        self.text_generator = pipeline("text-generation", model=model, device=device)
 
     def fit(
         self, target: LanguageModel, task_description: str | None = None
@@ -24,6 +30,39 @@ class HuggingFaceLM(LanguageModel):
             The fitted language model.
         """
         raise NotImplementedError("This is not implemented yet.")
+
+    def generate(
+        self,
+        condition: str | None,
+        do_sample: bool = False,
+        max_length: int | None = None,
+        temperature: float = 1.0,
+        num_return_sequences: int = 1,
+    ) -> list[str]:
+        """Generate an output given the language model.
+
+        Args:
+            condition: The conditioning sequence for the output.
+                If None, the output is not conditioned.
+            do_sample: Whether to use sampling or greedy decoding.
+            max_length: The maximum length of the output sequence,
+                (defaults to model max).
+            temperature: The value used to module the next token probabilities.
+            num_return_sequences: The number of independently computed returned
+                sequences for each element in the batch.
+
+        Returns:
+            str: A sampled output sequence from the language model.
+        """
+        results = self.text_generator(
+            condition,
+            do_sample=do_sample,
+            max_length=max_length,
+            temperature=temperature,
+            num_return_sequences=num_return_sequences,
+            clean_up_tokenization_spaces=True,
+        )
+        return [res["generated_text"] for res in results]
 
 
 def load_from_spec(spec_file: str) -> HuggingFaceLM:
