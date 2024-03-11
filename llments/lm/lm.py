@@ -45,9 +45,7 @@ class LanguageModel:
     def set_seed(self, seed: int):
         """Set the seed for the language model.
 
-                Args:
-                    seed: The seed to set for the language model.
-        =======
-        >>>>>>> f147f392d64b9e4ac9738c0d90c7b227401ab267
+        Args:
+            seed: The seed to set for the language model.
         """
         ...
