@@ -33,3 +33,9 @@ repository = "https://github.com/neulab/llments"
 
 [tool.hatch.version]
 path = "llments/version.py"
+
+[tool.ruff.lint]
+select = ["D"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
