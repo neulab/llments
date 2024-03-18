@@ -22,7 +22,7 @@ def generate_community_opinion(
     seed: int,
     preceding_prompt: str | None = None,
     overwrite: bool = False,
-):
+) -> None:
     model.set_seed(seed)
 
     questions = anes_df.pid.values.tolist()
@@ -63,7 +63,7 @@ def compute_group_stance(
     data_folder: str,
     output_filename: str,
     overwrite: bool = False,
-):
+) -> None:
     if not overwrite and os.path.exists(output_filename):
         return
 

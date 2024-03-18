@@ -31,7 +31,7 @@ jobs:
       - name: mypy
         uses: pre-commit/action@v3.0.0
         with:
-          extra_args: mypy --all-files
+          extra_args: mypy --all-files --strict
   lint-markdown:
     runs-on: ubuntu-latest
     steps:

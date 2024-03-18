@@ -72,7 +72,7 @@ class HuggingFaceLM(LanguageModel):
         )
         return [res["generated_text"] for res in results]
 
-    def set_seed(self, seed: int):
+    def set_seed(self, seed: int) -> None:
         """Set the seed for the language model.
 
         Args:
