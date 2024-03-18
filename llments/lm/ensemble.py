@@ -1,8 +1,12 @@
+"""Module for ensembling language models together."""
+
 from typing import Literal
 from llments.lm.lm import LanguageModel
 
 
 class EnsembleLanguageModel(LanguageModel):
+    """Ensemble several language models together."""
+
     def __init__(
         self,
         bases: list[LanguageModel],

@@ -1,8 +1,4 @@
-"""
-
-This script uses community GPT models to generate opinions given prompts.
-
-"""
+"""This script uses community GPT models to generate opinions given prompts."""
 
 import os
 import tqdm
@@ -23,6 +19,16 @@ def generate_community_opinion(
     preceding_prompt: str | None = None,
     overwrite: bool = False,
 ):
+    """Generate opinions for a given prompt.
+
+    Args:
+        model: The language model.
+        prompt_option: The prompt option.
+        output_path: The output path.
+        seed: The seed for the language model.
+        preceding_prompt: The preceding prompt.
+        overwrite: Whether to overwrite the output file if it exists.
+    """
     model.set_seed(seed)
 
     questions = anes_df.pid.values.tolist()
@@ -64,6 +70,14 @@ def compute_group_stance(
     output_filename: str,
     overwrite: bool = False,
 ):
+    """Compute the group sentiment for a set of generated opinions.
+
+    Args:
+        evaluator: The sentiment evaluator.
+        data_folder: The folder containing the generated opinions.
+        output_filename: The output filename.
+        overwrite: Whether to overwrite the output file if it exists.
+    """
     if not overwrite and os.path.exists(output_filename):
         return
 
