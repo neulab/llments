@@ -114,6 +114,8 @@ class HuggingFaceLMFitter(LMFitter):
 
         # TODO: use HF Trainer class to train the model
 
+        return None
+
 
     def _prepare_training_data(self, target: LanguageModel, batch, steps):
         """Generate data from the target language model, using generate() function.
