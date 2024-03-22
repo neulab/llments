@@ -1,11 +1,11 @@
-from llments.datastore.datastore import Datastore
+from llments.datastore.pyserini_datastore import PyseriniDatastore
 from llments.lm.lm import LanguageModel
 
 
 class RAGLanguageModel(LanguageModel):
     def __init__(self, base: LanguageModel, document_path: str, index_path: str, index_encoder: str, fields: list, 
                  to_faiss: bool, device: str, delimiter="\n", docid_field=None, batch_size=64, max_length=256, 
-                 dimension=768, prefix=None, pooling='cls', l2_norm=False, use_openai=False, rate_limit=3500):
+                 dimension=768, prefix=None, pooling=None, l2_norm=None, use_openai=False, rate_limit=3500):
         """Apply retrieval-augmented generation over a datastore.
 
         Args:
@@ -29,7 +29,7 @@ class RAGLanguageModel(LanguageModel):
             LanguageModel: The enhanced language model.
         """
         print("Creating Datastore...")
-        pyserini_encoder = Datastore(document_path, index_path, index_encoder, fields, device)
+        pyserini_encoder = PyseriniDatastore(document_path, index_path, index_encoder, fields, device)
         pyserini_encoder.encode(delimiter=delimiter, docid_field=docid_field, batch_size=batch_size, max_length=max_length, 
                                 dimension=dimension, prefix=prefix, pooling=pooling, l2_norm=l2_norm, to_faiss=to_faiss, 
                                 use_openai=use_openai, rate_limit=rate_limit)
