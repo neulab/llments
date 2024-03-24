@@ -2,11 +2,11 @@
 
 This is a replication of the experiments from [Detoxifying Language Models Risks Marginalizing Minority Voices](https://aclanthology.org/2021.naacl-main.190) (Xu et al., NAACL 2021), which investigates the impact of detoxification on the performance of language models on language patterns concerning minority groups.
 
-
 ## Dependencies
+
 To better align with the original implementation in the paper, we recommend using the version of the dependencies in the `requirements.txt` file. You can install the dependencies by running the following command:
 
-```
+```bash
 pip install -r requirements.txt
 ```
 
@@ -14,19 +14,19 @@ pip install -r requirements.txt
 
 Before runnning code to preprocess the data, make sure you have create the following directories to store the data:
 
-```
+```bash
 mkdir -p data/raw/civilcomments data/raw/translation_pairs data/train/ft data/eval/translation_pairs/scored/ data/eval/translation_pairs/filtered/
 ```
 
-Then, download the training data from https://www.kaggle.com/c/jigsaw-unintended-bias-in-toxicity-classification, save and unzip the target file under the `data/raw/civilcomments` directory. 
+Then, download the [training data](https://www.kaggle.com/c/jigsaw-unintended-bias-in-toxicity-classification), save and unzip the target file under the `data/raw/civilcomments` directory.
 
-The evaluation data is available at the the optional supplementary materials https://aclanthology.org/2020.emnlp-main.473/. After downloading the data, save and unzip the target file under the `data/raw/translation_pairs` directory.
+The evaluation data is the AAVE/SAE Paired Dataset, which can be downloaded from the [Optional Supplementary materials](https://aclanthology.org/2020.emnlp-main.473/) from its ACL main page. After downloading the data, save and unzip the target file under the `data/raw/translation_pairs` directory.
 
 ## Reference
 
 Some of this code and data was derived from the [Detoxification repo](https://github.com/albertkx/detoxifying-lms).
 
-If you use this example, we would appreciate if you acknowledge LLMents and the original paper and datasets. 
+If you use this example, we would appreciate if you acknowledge LLMents and the original paper and datasets.
 
 ```bibtex
 @misc{
@@ -52,6 +52,7 @@ If you use this example, we would appreciate if you acknowledge LLMents and the 
     year={2021}
 }
 ```
+
 ```bibtex
 @inproceedings{groenwold-etal-2020-investigating,
     title = "Investigating {A}frican-{A}merican {V}ernacular {E}nglish in Transformer-Based Text Generation",
@@ -61,8 +62,3 @@ If you use this example, we would appreciate if you acknowledge LLMents and the 
     year = "2020"
 }
 ```
-
-
-
-
-
