@@ -1,42 +1,67 @@
+import os
 from llments.datastore.datastore import Datastore
 
 class PyseriniDatastore(Datastore):
-    def __init__(self, input_jsonl, output_dir, encoder, fields, device):
+    def __init__(self, index_path: str, document_path=None, index_encoder=None, fields=None, 
+                 to_faiss=False, device='cpu', delimiter="\n", docid_field=None, batch_size=64, max_length=256, 
+                 dimension=768, prefix=None, pooling=None, l2_norm=None, use_openai=False, rate_limit=3500):
         """
         Initializes a PyseriniDatastore object.
 
         Args:
-            input_jsonl (str): Path to the JSONL document file.
-            output_dir (str): Directory to store the encoded representations.
-            encoder (str): The type of document encoder to use.
-            fields (list): The document fields to be encoded.
-            device (str): The device to be used for encoding.
-        """
-
-        self.input_jsonl = input_jsonl
-        self.output_dir = output_dir
-        self.encoder = encoder
-        self.device = device
-        self.fields = fields
-
-    def encode(self, delimiter="\n", docid_field=None, batch_size=64, max_length=256, dimension=768, 
-                prefix=None, pooling=None, l2_norm=None, to_faiss=False, use_openai=False, rate_limit=3500):
-        """
-        Encodes documents using the specified parameters.
-
-        Args:
+            index_path (str): The path to store the generated index.
+            document_path (str, optional): The path to the document file. Defaults to None.
+            index_encoder (Any, optional): The type of document encoder. Defaults to None.
+            fields (List[str], optional): The document fields to be encoded. Defaults to ['text'].
+            to_faiss (bool, optional): Store as a FAISS index. Defaults to False.
+            device (str, optional): The device to be used for encoding. Defaults to 'cpu'.
             delimiter (str, optional): Delimiter for document separation. Defaults to "\n".
             docid_field (str, optional): Field in the document containing document id. Defaults to None.
             batch_size (int, optional): Batch size for encoding. Defaults to 64.
             max_length (int, optional): Maximum length of the input sequence. Defaults to 256.
             dimension (int, optional): Dimensionality of the encoding. Defaults to 768.
             prefix (str, optional): Prefix to add to each document. Defaults to None.
-            pooling (str, optional): Pooling strategy for document encoding. Defaults to 'cls'.
-            l2_norm (bool, optional): Whether to apply L2 normalization. Defaults to False.
-            to_faiss (bool, optional): Whether to store as a FAISS index. Defaults to False.
-            use_openai (bool, optional): Whether to use OpenAI API. Defaults to False.
-            rate_limit (int, optional): Rate limit for OpenAI API. Defaults to 3500.
+            pooling (str, optional): Pooling strategy for document encoding. Defaults to None.
+            l2_norm (bool, optional): Whether to apply L2 normalization. Defaults to None.
+            use_openai (bool, optional): Whether to use OpenAI's encoder. Defaults to False.
+            rate_limit (int, optional): Rate limit for OpenAI API requests. Defaults to 3500.
+        """  
+        self.index_path = index_path
+
+        if document_path is not None:
+            print("Creating the Datastore...")
+            self.encode(document_path=document_path, index_encoder=index_encoder, fields=fields, delimiter=delimiter,
+                        docid_field=docid_field, batch_size=batch_size, max_length=max_length, dimension=dimension, prefix=prefix,
+                        pooling=pooling, l2_norm=l2_norm, to_faiss=to_faiss, device=device, use_openai=use_openai, rate_limit=rate_limit)
+        elif not os.path.exists(index_path):
+            raise FileNotFoundError(f"Index path '{index_path}' does not exist. You have to create an index first.")
+
+    def encode(self, document_path: str, index_encoder: str, fields: list, delimiter="\n", docid_field=None,
+                batch_size=64, max_length=256, dimension=768, prefix=None, pooling=None, l2_norm=None, to_faiss=False,
+                device='cpu', use_openai=False, rate_limit=3500):
         """
+        Encodes documents using the specified parameters.
+
+        Args:
+            document_path (str): The path to the document file.
+            index_encoder (str): The type of document encoder.
+            fields (List[str], optional): The document fields to be encoded. Defaults to ['text'].
+            delimiter (str, optional): Delimiter for document separation. Defaults to "\n".
+            docid_field (str, optional): Field in the document containing document id. Defaults to None.
+            batch_size (int, optional): Batch size for encoding. Defaults to 64.
+            max_length (int, optional): Maximum length of the input sequence. Defaults to 256.
+            dimension (int, optional): Dimensionality of the encoding. Defaults to 768.
+            prefix (str, optional): Prefix to add to each document. Defaults to None.
+            pooling (str, optional): Pooling strategy for document encoding. Defaults to None.
+            l2_norm (bool, optional): Whether to apply L2 normalization. Defaults to None.
+            to_faiss (bool, optional): Whether to store as a FAISS index. Defaults to False.
+            device (str, optional): The device to be used for encoding. Defaults to 'cpu'.
+            use_openai (bool, optional): Whether to use OpenAI's encoder. Defaults to False.
+            rate_limit (int, optional): Rate limit for OpenAI API requests. Defaults to 3500.
+        """
+
+        if document_path is None or index_encoder is None or fields is None:
+            raise ValueError("document_path, index_encoder and fields are required parameters.")
 
         try:
             from pyserini.encode import JsonlCollectionIterator
@@ -61,7 +86,7 @@ class PyseriniDatastore(Datastore):
         encoder_class = None
 
         for class_keyword in encoder_class_map:
-            if class_keyword in self.encoder.lower():
+            if class_keyword in index_encoder.lower():
                 try:
                     module = __import__('pyserini.encode', fromlist=[encoder_class_map[class_keyword]])
                     encoder_class = getattr(module, encoder_class_map[class_keyword])
@@ -84,17 +109,17 @@ class PyseriniDatastore(Datastore):
             _encoder_class = "AutoDocumentEncoder"
         
         if pooling is None:
-            if "sentence-transformers" in self.encoder:
+            if "sentence-transformers" in index_encoder:
                 pooling = 'mean'
-            elif "contriever" in self.encoder:
+            elif "contriever" in index_encoder:
                 pooling = 'mean'
             else:
                 pooling = 'cls'
         
         if l2_norm is None:
-            if "sentence-transformers" in self.encoder:
+            if "sentence-transformers" in index_encoder:
                 l2_norm = True
-            elif "contriever" in self.encoder:
+            elif "contriever" in index_encoder:
                 l2_norm = False
             else:
                 l2_norm = False
@@ -102,9 +127,9 @@ class PyseriniDatastore(Datastore):
         print("Initializing the document encoder ...")
 
         if _encoder_class == "AutoDocumentEncoder":
-            encoder_instance = encoder_class(model_name=self.encoder, device=self.device, pooling=pooling, l2_norm=l2_norm, prefix=prefix)
+            encoder_instance = encoder_class(model_name=index_encoder, device=device, pooling=pooling, l2_norm=l2_norm, prefix=prefix)
         else:
-            encoder_instance = encoder_class(model_name = self.encoder, device = self.device)
+            encoder_instance = encoder_class(model_name = index_encoder, device = device)
 
         if to_faiss:
             try:
@@ -113,7 +138,7 @@ class PyseriniDatastore(Datastore):
                 raise ImportError(
                     "You need to install the `pyserini` package to use this class."
                 )
-            embedding_writer = FaissRepresentationWriter(self.output_dir, dimension=dimension)
+            embedding_writer = FaissRepresentationWriter(self.index_path, dimension=dimension)
         else:
             try:
                 from pyserini.encode import JsonlRepresentationWriter
@@ -121,9 +146,9 @@ class PyseriniDatastore(Datastore):
                 raise ImportError(
                     "You need to install the `pyserini` package to use this class."
                 )
-            embedding_writer = JsonlRepresentationWriter(self.output_dir)
+            embedding_writer = JsonlRepresentationWriter(self.index_path)
 
-        collection_iterator = JsonlCollectionIterator(self.input_jsonl, self.fields, docid_field, delimiter)
+        collection_iterator = JsonlCollectionIterator(document_path, fields, docid_field, delimiter)
 
         if use_openai:
             try:
@@ -139,14 +164,14 @@ class PyseriniDatastore(Datastore):
         with embedding_writer:
             for batch_info in collection_iterator(batch_size):
                 texts = batch_info['text']
-                titles = batch_info['title'] if 'title' in self.fields else None
-                expands = batch_info['expand'] if 'expand' in self.fields else None
+                titles = batch_info['title'] if 'title' in fields else None
+                expands = batch_info['expand'] if 'expand' in fields else None
                 fp16 = False
                 max_length = max_length
                 add_sep = False
                 
                 embeddings = encoder_instance.encode(texts=texts, titles=titles, expands=expands, fp16=fp16, max_length=max_length, add_sep=add_sep)
                 batch_info['vector'] = embeddings
-                embedding_writer.write(batch_info, self.fields)
+                embedding_writer.write(batch_info, fields)
 
         print("\nIndex creation completed sucessfully!")
