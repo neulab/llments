@@ -8,7 +8,7 @@ class RAGLanguageModel(LanguageModel):
 
         Args:
             base: The language model to be modified.
-            
+            datastore: The datastore object for document index
 
         Returns:
             LanguageModel: The enhanced language model.
