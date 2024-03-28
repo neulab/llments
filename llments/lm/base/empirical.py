@@ -1,3 +1,5 @@
+"""A module for empirical language models."""
+
 from llments.lm.lm import LanguageModel
 import random
 import json
@@ -5,7 +7,16 @@ import pandas as pd
 
 
 class EmpiricalDistribution(LanguageModel):
+    """An empirical distribution of text data."""
+
     def __init__(self, data: list[str], probs: list[float] | None = None):
+        """Initialize the empirical distribution.
+
+        Args:
+            data: The data to be used for the empirical distribution.
+            probs: The probabilities of each data point in the distribution.
+                If None, the probabilities are assumed to be uniform.
+        """
         if probs is None:
             probs = [1 / len(data)] * len(data)
         self.data = pd.DataFrame({"text": data, "prob": probs})
@@ -42,16 +53,24 @@ class EmpiricalDistribution(LanguageModel):
             filtered_df["text"], weights=filtered_df["probs"], k=num_return_sequences
         )[0]
 
-    def fit(self, target: LanguageModel, task_description: str | None = None):
-        raise ValueError(
-            "Cannot fit an empirical distribution to another distribution."
-        )
-
     def calculate_probability(self, x: str) -> float:
+        """Calculate the probability of an output given the language model.
+
+        Args:
+            x: The output sequence for which the probability is calculated.
+
+        Returns:
+            float: The probability of output x given the language model.
+        """
         # Implementation logic
         raise NotImplementedError("This is not implemented yet.")
 
     def set_seed(self, seed: int):
+        """Set the seed for the language model.
+
+        Args:
+            seed: The seed to set for the language model.
+        """
         random.seed(seed)
 
 

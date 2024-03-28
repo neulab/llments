@@ -1,0 +1,5 @@
+faiss-cpu
+numpy
+pandas
+pyserini
+torch

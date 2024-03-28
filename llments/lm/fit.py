@@ -1,3 +1,5 @@
+"""Module for fitting language models to other language models."""
+
 from llments.lm.lm import LanguageModel
 from llments.lm.base.hugging_face import HuggingFaceLM
 from typing import Union

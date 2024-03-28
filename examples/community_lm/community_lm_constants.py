@@ -1,3 +1,5 @@
+"""Constants for the community_lm example."""
+
 import pandas as pd
 
 anes_data: dict[str, list] = {

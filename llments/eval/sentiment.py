@@ -1,3 +1,5 @@
+"""Evaluators for sentiment analysis."""
+
 import abc
 import warnings
 
@@ -74,7 +76,9 @@ class HuggingFaceSentimentEvaluator(SentimentEvaluator):
 
         Args:
             hyps: A list of hypothesized strings (e.g. system outputs).
-            context: Not used.
+            contexts: Not used.
+            minibatch_size: The size of the minibatch to use,
+                None guesses a good size automatically.
             show_progress: Whether to show a progress bar.
 
         Returns:
