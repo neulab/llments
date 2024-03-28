@@ -1,10 +1,13 @@
 from llments.lm.lm import LanguageModel
 from llments.lm.base.hugging_face import HuggingFaceLM
+from typing import Union
 
 
 class LMFitter:
     @classmethod
-    def fit(cls, base, target: LanguageModel, **kwargs):
+    def fit(
+        cls, base: Union[LanguageModel, HuggingFaceLM], target: LanguageModel, **kwargs
+    ):
         """Fit a language model to match another language model.
 
         Args:
@@ -14,17 +17,12 @@ class LMFitter:
         Returns:
             LanguageModel: The fitted language model.
         """
-        if isinstance(base, HuggingFaceLM):
-            return HuggingFaceLMFitter.fit(base, target, **kwargs)
-        else:
-            raise NotImplementedError(
-                f"Cannot fit language models of type {type(base)}"
-            )
+        raise NotImplementedError
 
 
 class HuggingFaceLMFitter(LMFitter):
     @classmethod
-    def fit(cls, base, target, **kwargs) -> LanguageModel:
+    def fit(cls, base: LanguageModel, target: LanguageModel, **kwargs) -> LanguageModel:
         """Fit the language model to a target language model's distribution.
 
         Args:
@@ -43,6 +41,13 @@ class HuggingFaceLMFitter(LMFitter):
                 "You need to install 'transformers' package to use this function."
             )
 
+        if isinstance(base, HuggingFaceLM):
+            return HuggingFaceLMFitter.fit(base, target, **kwargs)
+        else:
+            raise NotImplementedError(
+                f"Cannot fit language models of type {type(base)}"
+            )
+
         batch_size = kwargs.get("batch_size", 32)
         training_steps = kwargs.get("training_steps", 200)
 
@@ -55,10 +60,10 @@ class HuggingFaceLMFitter(LMFitter):
         num_train_epochs = training_steps / (len(dataset) / batch_size)
 
         training_args = TrainingArguments(
-            output_dir="./training_results",
+            output_dir=kwargs.get("output_dir", "./training_results"),
             num_train_epochs=num_train_epochs,
             per_device_train_batch_size=batch_size,
-            logging_dir="./logs",
+            logging_dir=kwargs.get("log_dir", "./logs"),
             logging_steps=10,
         )
 

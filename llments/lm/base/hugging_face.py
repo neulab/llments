@@ -1,4 +1,5 @@
 from llments.lm.lm import LanguageModel
+import json
 
 
 class HuggingFaceLM(LanguageModel):
@@ -73,7 +74,7 @@ class HuggingFaceLM(LanguageModel):
 
     def calculate_probability(self, output: str) -> float:
         # TODO
-        return 0.0
+        raise NotImplementedError
 
 
 def load_from_spec(spec_file: str) -> HuggingFaceLM:
@@ -86,8 +87,6 @@ def load_from_spec(spec_file: str) -> HuggingFaceLM:
     Returns:
         A HuggingFaceLM instance.
     """
-    import json
-
     with open(spec_file, "r") as file:
         spec = json.load(file)
 
