@@ -2,7 +2,7 @@ import os
 from llments.datastore.datastore import Datastore
 
 class PyseriniDatastore(Datastore):
-    def __init__(self, index_path: str, document_path=None, index_encoder=None, fields=None, 
+    def __init__(self, index_path: str, document_path: str, index_encoder=None, fields=None, 
                  to_faiss=False, device='cpu', delimiter="\n", docid_field=None, batch_size=64, max_length=256, 
                  dimension=768, prefix=None, pooling=None, l2_norm=None, use_openai=False, rate_limit=3500):
         """
@@ -10,7 +10,7 @@ class PyseriniDatastore(Datastore):
 
         Args:
             index_path (str): The path to store the generated index.
-            document_path (str, optional): The path to the document file. Defaults to None.
+            document_path (str): The path to the document file
             index_encoder (Any, optional): The type of document encoder. Defaults to None.
             fields (List[str], optional): The document fields to be encoded. Defaults to ['text'].
             to_faiss (bool, optional): Store as a FAISS index. Defaults to False.
@@ -27,23 +27,21 @@ class PyseriniDatastore(Datastore):
             rate_limit (int, optional): Rate limit for OpenAI API requests. Defaults to 3500.
         """  
         self.index_path = index_path
+        self.document_path = document_path
 
-        if document_path is not None:
+        if not os.path.exists(index_path):
             print("Creating the Datastore...")
-            self.encode(document_path=document_path, index_encoder=index_encoder, fields=fields, delimiter=delimiter,
+            self.encode(index_encoder=index_encoder, fields=fields, delimiter=delimiter,
                         docid_field=docid_field, batch_size=batch_size, max_length=max_length, dimension=dimension, prefix=prefix,
                         pooling=pooling, l2_norm=l2_norm, to_faiss=to_faiss, device=device, use_openai=use_openai, rate_limit=rate_limit)
-        elif not os.path.exists(index_path):
-            raise FileNotFoundError(f"Index path '{index_path}' does not exist. You have to create an index first.")
 
-    def encode(self, document_path: str, index_encoder: str, fields: list, delimiter="\n", docid_field=None,
+    def encode(self, index_encoder: str, fields: list, delimiter="\n", docid_field=None,
                 batch_size=64, max_length=256, dimension=768, prefix=None, pooling=None, l2_norm=None, to_faiss=False,
                 device='cpu', use_openai=False, rate_limit=3500):
         """
         Encodes documents using the specified parameters.
 
         Args:
-            document_path (str): The path to the document file.
             index_encoder (str): The type of document encoder.
             fields (List[str], optional): The document fields to be encoded. Defaults to ['text'].
             delimiter (str, optional): Delimiter for document separation. Defaults to "\n".
@@ -60,8 +58,8 @@ class PyseriniDatastore(Datastore):
             rate_limit (int, optional): Rate limit for OpenAI API requests. Defaults to 3500.
         """
 
-        if document_path is None or index_encoder is None or fields is None:
-            raise ValueError("document_path, index_encoder and fields are required parameters.")
+        if index_encoder is None or fields is None:
+            raise ValueError("index_encoder and fields are required parameters.")
 
         try:
             from pyserini.encode import JsonlCollectionIterator
@@ -148,7 +146,7 @@ class PyseriniDatastore(Datastore):
                 )
             embedding_writer = JsonlRepresentationWriter(self.index_path)
 
-        collection_iterator = JsonlCollectionIterator(document_path, fields, docid_field, delimiter)
+        collection_iterator = JsonlCollectionIterator(self.document_path, fields, docid_field, delimiter)
 
         if use_openai:
             try:

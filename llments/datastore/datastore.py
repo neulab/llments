@@ -2,7 +2,7 @@ import abc
 
 class Datastore:
     @abc.abstractmethod
-    def __init__(self, index_path: str, document_path=None, index_encoder=None, fields=None, 
+    def __init__(self, index_path: str, document_path: str, index_encoder=None, fields=None, 
                  to_faiss=False, device='cpu', delimiter="\n", docid_field=None, batch_size=64, max_length=256, 
                  dimension=768, prefix=None, pooling=None, l2_norm=None, use_openai=False, rate_limit=3500):
         """
@@ -10,7 +10,7 @@ class Datastore:
 
         Args:
             index_path (str): The path to store the generated index.
-            document_path (str, optional): The path to the document file. Defaults to None.
+            document_path (str): The path to the document file.
             index_encoder (Any, optional): The type of document encoder. Defaults to None.
             fields (List[str], optional): The document fields to be encoded. Defaults to ['text'].
             to_faiss (bool, optional): Store as a FAISS index. Defaults to False.
@@ -29,14 +29,13 @@ class Datastore:
         pass
 
     @abc.abstractmethod
-    def encode(self, document_path: str, index_encoder: str, fields: list, delimiter="\n", docid_field=None,
+    def encode(self, index_encoder: str, fields: list, delimiter="\n", docid_field=None,
                     batch_size=64, max_length=256, dimension=768, prefix=None, pooling=None, l2_norm=None, to_faiss=False,
                     device='cpu', use_openai=False, rate_limit=3500):
         """
         Encodes documents using the specified parameters.
 
         Args:
-            document_path (str): The path to the document file.
             index_encoder (str): The type of document encoder.
             fields (List[str], optional): The document fields to be encoded. Defaults to ['text'].
             delimiter (str, optional): Delimiter for document separation. Defaults to "\n".
