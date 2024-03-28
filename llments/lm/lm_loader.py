@@ -1,3 +1,5 @@
+"""Module for loading language models from specification files."""
+
 from llments.lm.lm import LanguageModel
 
 

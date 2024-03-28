@@ -1,7 +1,11 @@
+"""Base class for language models."""
+
 import abc
 
 
 class LanguageModel:
+    """Base class for language models."""
+
     @abc.abstractmethod
     def calculate_probability(self, output: str) -> float:
         """Calculate the probability of an output given the language model.
