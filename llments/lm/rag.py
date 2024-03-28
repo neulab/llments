@@ -30,7 +30,7 @@ class RAGLanguageModel(LanguageModel):
         Returns:
             str: Sampled output sequences from the language model.
         """
-        pass
+        return super().generate(condition, do_sample, max_length, temperature, num_return_sequences)
 
         
 
