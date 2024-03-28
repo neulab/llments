@@ -1,4 +1,6 @@
+"""Constants for the community_lm example."""
 from typing import cast
+
 import pandas as pd
 
 anes_data: dict[str, list[float] | list[str] | list[bool]] = {

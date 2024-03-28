@@ -1,8 +1,12 @@
+"""A module for reinforcement learning based language models."""
+
 from llments.eval.eval import Evaluator
 from llments.lm.lm import LanguageModel
 
 
 class RLLanguageModel(LanguageModel):
+    """Reinforcement learning based language models."""
+
     def __init__(self, base: LanguageModel, evaluator: Evaluator):
         """Apply reinforcement learning to modify a model based on the reward function.
 

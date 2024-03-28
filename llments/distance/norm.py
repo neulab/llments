@@ -1,3 +1,5 @@
+"""L1 distance between two language models."""
+
 from llments.lm.lm import LanguageModel
 
 

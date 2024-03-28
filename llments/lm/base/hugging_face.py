@@ -1,7 +1,11 @@
+"""Module for HuggingFace language models."""
+
 from llments.lm.lm import LanguageModel
 
 
 class HuggingFaceLM(LanguageModel):
+    """A language model that uses the HuggingFace library."""
+
     def __init__(
         self,
         model: str,
