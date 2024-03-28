@@ -1,20 +1,31 @@
+"""A module for retrieval-augmented generation based language models."""
+
 from llments.datastore.datastore import Datastore
 from llments.lm.lm import LanguageModel
 
 
 class RAGLanguageModel(LanguageModel):
+    """Retrieval-augmented generation based language models."""
+
     def __init__(self, base: LanguageModel, datastore: Datastore):
         """Apply retrieval-augmented generation over a datastore.
 
         Args:
             base: The language model to be modified.
-            datastore: The datastore object for document index
+            datastore: The datastore to be used to retrieve the relevant information.
 
         Returns:
             LanguageModel: The enhanced language model.
         """
-        
-    def generate(self, condition: str | None, do_sample: bool = False, max_length: int | None = None, temperature: float = 1, num_return_sequences: int = 1) -> list[str]:
+
+    def generate(
+        self,
+        condition: str | None,
+        do_sample: bool = False,
+        max_length: int | None = None,
+        temperature: float = 1,
+        num_return_sequences: int = 1,
+    ) -> list[str]:
         """Generate an output given the language model.
 
         Args:
@@ -31,6 +42,3 @@ class RAGLanguageModel(LanguageModel):
             str: Sampled output sequences from the language model.
         """
         raise NotImplementedError
-
-        
-
