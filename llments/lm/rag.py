@@ -13,8 +13,15 @@ class RAGLanguageModel(LanguageModel):
         Returns:
             LanguageModel: The enhanced language model.
         """
-        
-    def generate(self, condition: str | None, do_sample: bool = False, max_length: int | None = None, temperature: float = 1, num_return_sequences: int = 1) -> list[str]:
+
+    def generate(
+        self,
+        condition: str | None,
+        do_sample: bool = False,
+        max_length: int | None = None,
+        temperature: float = 1,
+        num_return_sequences: int = 1,
+    ) -> list[str]:
         """Generate an output given the language model.
 
         Args:
@@ -31,6 +38,3 @@ class RAGLanguageModel(LanguageModel):
             str: Sampled output sequences from the language model.
         """
         raise NotImplementedError
-
-        
-
