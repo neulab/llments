@@ -41,9 +41,7 @@ class HuggingFaceLMFitter(LMFitter):
                 "You need to install 'transformers' package to use this function."
             )
 
-        if isinstance(base, HuggingFaceLM):
-            return HuggingFaceLMFitter.fit(base, target, **kwargs)
-        else:
+        if not isinstance(base, HuggingFaceLM):
             raise NotImplementedError(
                 f"Cannot fit language models of type {type(base)}"
             )
