@@ -53,11 +53,12 @@ class EmpiricalDistribution(LanguageModel):
             filtered_df["text"], weights=filtered_df["probs"], k=num_return_sequences
         )[0]
 
-    def calculate_probability(self, x: str) -> float:
+    def calculate_probability(self, condition: str | None, output: str) -> float:
         """Calculate the probability of an output given the language model.
 
         Args:
-            x: The output sequence for which the probability is calculated.
+            condition: The conditioning sequence for the output.
+            output: The output sequence for which the probability is calculated.
 
         Returns:
             float: The probability of output x given the language model.
