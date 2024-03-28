@@ -30,7 +30,7 @@ class RAGLanguageModel(LanguageModel):
         Returns:
             str: Sampled output sequences from the language model.
         """
-        return None
+        return [" "]
 
         
 
