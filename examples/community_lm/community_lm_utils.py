@@ -18,7 +18,7 @@ def generate_community_opinion(
     seed: int,
     preceding_prompt: str | None = None,
     overwrite: bool = False,
-):
+) -> None:
     """Generate opinions for a given prompt.
 
     Args:
@@ -69,7 +69,7 @@ def compute_group_stance(
     data_folder: str,
     output_filename: str,
     overwrite: bool = False,
-):
+) -> None:
     """Compute the group sentiment for a set of generated opinions.
 
     Args:
