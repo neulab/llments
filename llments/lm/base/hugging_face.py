@@ -77,7 +77,14 @@ class HuggingFaceLM(LanguageModel):
         set_seed(seed)
 
     def calculate_probability(self, output: str) -> float:
-        # TODO
+        """Calculate the probability of an output given the language model.
+
+        Args:
+            output: The output sequence for which the probability is calculated.
+
+        Returns:
+            float: The probability of output x given the language model.
+        """
         raise NotImplementedError
 
 
