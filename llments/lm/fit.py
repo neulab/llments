@@ -1,4 +1,12 @@
-"""Module for fitting language models to other language models."""
+"""This module provides the necessary interfaces and functionality for working with different types of language models, integrating both custom implementations and models from the Hugging Face Transformers library.
+
+Classes:
+    LanguageModel: An abstract base class for language models.
+    HuggingFaceLM: A wrapper class for language models from the Hugging Face library.
+
+The module is designed to be flexible and extendable, allowing for easy integration
+of additional language model types and functionalities in the future.
+"""
 
 from llments.lm.lm import LanguageModel
 from llments.lm.base.hugging_face import HuggingFaceLM
@@ -6,6 +14,12 @@ from typing import Union
 
 
 class LMFitter:
+    """A class responsible for fitting one language model to match another.
+
+    This class provides the interface for adapting a base language model to more
+    closely resemble the target language model.
+    """
+
     @classmethod
     def fit(
         cls, base: Union[LanguageModel, HuggingFaceLM], target: LanguageModel, **kwargs
@@ -15,7 +29,7 @@ class LMFitter:
         Args:
             base: The language model to be modified.
             target: The targetting language model to fit on.
-
+            **kwargs: Arguments such as batch_size, training_step, output_dir, log_dir
         Returns:
             LanguageModel: The fitted language model.
         """
@@ -23,6 +37,12 @@ class LMFitter:
 
 
 class HuggingFaceLMFitter(LMFitter):
+    """A class responsible for fitting one Hugging Face language model to match another.
+
+    This class provides the interface for adapting a base language model to more
+    closely resemble the target language model.
+    """
+
     @classmethod
     def fit(cls, base: LanguageModel, target: LanguageModel, **kwargs) -> LanguageModel:
         """Fit the language model to a target language model's distribution.
@@ -30,9 +50,7 @@ class HuggingFaceLMFitter(LMFitter):
         Args:
             base: The HF language model to fine-tune. (delete the type identifier to pass mypy type checker)
             target: The language model that should be fitted to.
-            batch_size: Number of examples processed in one step.
-            training_steps: Number of steps to train.
-
+            **kwargs: Arguments such as batch_size, training_step, output_dir, log_dir
         Returns:
             The fitted language model.
         """
@@ -80,7 +98,7 @@ class HuggingFaceLMFitter(LMFitter):
     @classmethod
     def _prepare_training_data(
         cls,
-        base,
+        base: HuggingFaceLM,
         target: LanguageModel,
         batch_size: int,
         training_steps: int,
@@ -88,10 +106,13 @@ class HuggingFaceLMFitter(LMFitter):
         """Generate data from the target language model, using generate() function.
 
         Helper function of fit().
+
         Args:
+            base: model to fit.
             target: target language model.
-            batch: Number of examples processed in one step.
-            steps: Number of steps to train.
+            batch_size: Number of examples processed in one step.
+            training_steps: Number of steps to train.
+
         Returns:
             inputs: Generated data (type: HF BatchEncoding): result from calling HF tokenizer.
             labels: "Up shift" each token to create the labels.
@@ -130,6 +151,7 @@ class HuggingFaceLMFitter(LMFitter):
         """Return customized Dataset object, to be used in HF Trainer class.
 
         Helper function of fit()
+
         Args:
             inputs: generate inputs
             labels: labels from generate inputs
