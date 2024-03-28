@@ -49,9 +49,10 @@ class EmpiricalDistribution(LanguageModel):
             )
         # Normalize the probabilities
         filtered_df["prob"] = filtered_df["prob"] / filtered_df["prob"].sum()
-        return random.choices(
+        rets: list[str] = random.choices(
             filtered_df["text"], weights=filtered_df["probs"], k=num_return_sequences
         )[0]
+        return rets
 
     def calculate_probability(self, condition: str | None, output: str) -> float:
         """Calculate the probability of an output given the language model.
@@ -66,7 +67,7 @@ class EmpiricalDistribution(LanguageModel):
         # Implementation logic
         raise NotImplementedError("This is not implemented yet.")
 
-    def set_seed(self, seed: int):
+    def set_seed(self, seed: int) -> None:
         """Set the seed for the language model.
 
         Args:
@@ -75,13 +76,13 @@ class EmpiricalDistribution(LanguageModel):
         random.seed(seed)
 
 
-def load_from_text_file(text_file: str):
+def load_from_text_file(text_file: str) -> EmpiricalDistribution:
     """Load the distribution from a text file."""
     with open(text_file, "r") as f:
         return EmpiricalDistribution(f.readlines())
 
 
-def load_from_json_file(json_file: str):
+def load_from_json_file(json_file: str) -> EmpiricalDistribution:
     """Load the distribution from a text file."""
     with open(json_file, "r") as f:
         data = json.load(f)

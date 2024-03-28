@@ -47,7 +47,7 @@ class LanguageModel:
         ...
 
     @abc.abstractmethod
-    def set_seed(self, seed: int):
+    def set_seed(self, seed: int) -> None:
         """Set the seed for the language model.
 
         Args:
