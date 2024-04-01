@@ -40,7 +40,7 @@ class RAGLanguageModel(LanguageModel):
     @staticmethod
     def read_jsonl_to_dict(
         file_path: str
-    ) -> dict:
+    ) -> dict[str, str]:
         """Read JSONL file and convert it into a dictionary with document ID as keys and contents as values.
 
         Args:
@@ -58,7 +58,7 @@ class RAGLanguageModel(LanguageModel):
     
     def generate(
         self,
-        condition: str,
+        condition: str | None,
         do_sample: bool = False,
         max_length: int | None = None,
         temperature: float = 1.0,
@@ -92,7 +92,7 @@ class RAGLanguageModel(LanguageModel):
         prompt = "Please answer the following question, given its context.\nQuestion: " + condition + "\nContext: " + context + "\nAnswer: "
         
         lm_response = self.base.generate(
-            prompt,
+            condition=prompt,
             do_sample=do_sample,
             max_length=max_length,
             temperature=temperature,

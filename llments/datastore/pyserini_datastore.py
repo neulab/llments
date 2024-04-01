@@ -12,18 +12,18 @@ class PyseriniDatastore(Datastore):
         self,
         index_path: str,
         document_path: str,
-        index_encoder: str = None,
-        fields: list[str] = None,
+        index_encoder: str,
+        fields: list[str],
         to_faiss: bool = False,
         device: str = "cpu",
         delimiter: str = "\n",
-        docid_field: str = None,
+        docid_field: str | None = None,
         batch_size: int = 64,
         max_length: int = 256,
         dimension: int = 768,
-        prefix: str = None,
-        pooling: str = None,
-        l2_norm: bool = None,
+        prefix: str | None = None,
+        pooling: str = "cls",
+        l2_norm: bool = False,
         use_openai: bool = False,
         rate_limit: int = 3500,
     ):
@@ -32,8 +32,8 @@ class PyseriniDatastore(Datastore):
         Args:
             index_path (str): The path to store the generated index.
             document_path (str): The path to the document file.
-            index_encoder (Any, optional): The type of document encoder.
-            fields (List[str], optional): The document fields to be encoded.
+            index_encoder (str): The type of document encoder.
+            fields (list[str]): The document fields to be encoded.
             to_faiss (bool, optional): Store as a FAISS index.
             device (str, optional): The device to be used for encoding.
             delimiter (str, optional): Delimiter for document separation.
@@ -253,7 +253,7 @@ class PyseriniDatastore(Datastore):
         device: str = 'cpu',
         pooling: str = 'cls',
         l2_norm: bool = False,
-    ) -> object:
+    ) -> list[object]:
         """Retrieve documents based on the specified searcher name.
 
         Args:
@@ -265,7 +265,7 @@ class PyseriniDatastore(Datastore):
             l2_norm (bool, optional): Whether to apply L2 normalization to embeddings. Defaults to False.
 
         Returns:
-            object: Retrieved result object.
+            list[object]: Retrieved result objects.
         """
         try:
             from pyserini.search import FaissSearcher
