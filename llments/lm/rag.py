@@ -16,7 +16,7 @@ class RAGLanguageModel(LanguageModel):
         device: str | None=None,
         pooling: str | None=None,
         l2_norm: bool | None=None,
-    ) -> object:
+    ) -> None:
         """Apply retrieval-augmented generation over a datastore.
 
         Args:
@@ -40,7 +40,7 @@ class RAGLanguageModel(LanguageModel):
     @staticmethod
     def read_jsonl_to_dict(
         file_path: str
-    ):
+    ) -> dict:
         """Read JSONL file and convert it into a dictionary with document ID as keys and contents as values.
 
         Args:
@@ -58,7 +58,7 @@ class RAGLanguageModel(LanguageModel):
     
     def generate(
         self,
-        condition: str | None,
+        condition: str,
         do_sample: bool = False,
         max_length: int | None = None,
         temperature: float = 1.0,
