@@ -37,15 +37,13 @@ class RAGLanguageModel(LanguageModel):
     def read_jsonl_to_dict(
         file_path: str
     ):
-        """
-        Read JSONL file and convert it into a dictionary with document ID as keys and contents as values.
+        """Read JSONL file and convert it into a dictionary with document ID as keys and contents as values.
 
         Args:
             file_path (str): Path to the JSONL file.
 
         Returns:
             dict: Dictionary containing document contents with document ID as keys.
-
         """
         data_dict = {}
         with open(file_path, 'r', encoding='utf-8') as file:
