@@ -1,6 +1,7 @@
 """Module for HuggingFace language models."""
 
 from llments.lm.lm import LanguageModel
+import json
 
 
 class HuggingFaceLM(LanguageModel):
@@ -26,21 +27,6 @@ class HuggingFaceLM(LanguageModel):
         self.text_generator: TextGenerationPipeline = pipeline(
             "text-generation", model=model, device=device
         )
-
-    def fit(
-        self, target: LanguageModel, task_description: str | None = None
-    ) -> LanguageModel:
-        """Fit the language model to a target language model's distribution.
-
-        Args:
-            target: The language model that should be fitted to.
-            task_description: A task description that explains more about
-              what the language model that should be fit is doing (a prompt).
-
-        Returns:
-            The fitted language model.
-        """
-        raise NotImplementedError("This is not implemented yet.")
 
     def generate(
         self,
@@ -76,7 +62,7 @@ class HuggingFaceLM(LanguageModel):
         )
         return [res["generated_text"] for res in results]
 
-    def set_seed(self, seed: int):
+    def set_seed(self, seed: int) -> None:
         """Set the seed for the language model.
 
         Args:
@@ -90,14 +76,32 @@ class HuggingFaceLM(LanguageModel):
             )
         set_seed(seed)
 
+    def calculate_probability(self, output: str) -> float:
+        """Calculate the probability of an output given the language model.
+
+        Args:
+            output: The output sequence for which the probability is calculated.
+
+        Returns:
+            float: The probability of output x given the language model.
+        """
+        raise NotImplementedError
+
 
 def load_from_spec(spec_file: str) -> HuggingFaceLM:
     """Load a language model from a specification file.
 
     Args:
         spec_file: The path to the specification file.
+        The file should specifies the model identifier "model" and any other relevant parameters such as "device".
 
     Returns:
-        A language model.
+        A HuggingFaceLM instance.
     """
-    raise NotImplementedError("This is not implemented yet.")
+    with open(spec_file, "r") as file:
+        spec = json.load(file)
+
+    model_name = spec.get("model")
+    device = spec.get("device", None)
+
+    return HuggingFaceLM(model=model_name, device=device)

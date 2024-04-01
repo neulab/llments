@@ -1,8 +1,9 @@
 """Constants for the community_lm example."""
+from typing import cast
 
 import pandas as pd
 
-anes_data: dict[str, list] = {
+anes_data: dict[str, list[float] | list[str] | list[bool]] = {
     "Democrat": [
         17.664377682403433,
         81.29270386266094,
@@ -262,5 +263,5 @@ anes_data: dict[str, list] = {
 }
 anes_df: pd.DataFrame = pd.DataFrame(anes_data)
 
-politician_feelings: list[str] = anes_data["pid"][:16]
-groups_feelings: list[str] = anes_data["pid"][16:]
+politician_feelings: list[str] = cast(list[str], anes_data["pid"][:16])
+groups_feelings: list[str] = cast(list[str], anes_data["pid"][16:])

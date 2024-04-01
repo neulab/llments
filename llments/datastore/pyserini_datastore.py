@@ -1,11 +1,12 @@
 """A module for PyseriniDatastore class."""
 
 import os
+from typing import Any
 from llments.datastore.datastore import Datastore
 
 
 class PyseriniDatastore(Datastore):
-    """A datastore based on Pyserini for storing and retrieving data."""
+    """A PyseriniDatastore containing data for retrieval."""
 
     def __init__(
         self,
@@ -76,6 +77,8 @@ class PyseriniDatastore(Datastore):
         self,
         index_encoder: str,
         fields: list[str],
+        to_faiss: bool = False,
+        device: str = "cpu",
         delimiter: str = "\n",
         docid_field: str = None,
         batch_size: int = 64,
@@ -84,8 +87,6 @@ class PyseriniDatastore(Datastore):
         prefix: str = None,
         pooling: str = None,
         l2_norm: bool = None,
-        to_faiss: bool = False,
-        device: str = "cpu",
         use_openai: bool = False,
         rate_limit: int = 3500,
     ):
@@ -94,6 +95,8 @@ class PyseriniDatastore(Datastore):
         Args:
             index_encoder (str): The type of document encoder.
             fields (List[str], optional): The document fields to be encoded.
+            to_faiss (bool, optional): Whether to store as a FAISS index.
+            device (str, optional): The device to be used for encoding.
             delimiter (str, optional): Delimiter for document separation.
             docid_field (str, optional): Field in the document containing document id.
             batch_size (int, optional): Batch size for encoding.
@@ -102,8 +105,6 @@ class PyseriniDatastore(Datastore):
             prefix (str, optional): Prefix to add to each document.
             pooling (str, optional): Pooling strategy for document encoding.
             l2_norm (bool, optional): Whether to apply L2 normalization.
-            to_faiss (bool, optional): Whether to store as a FAISS index.
-            device (str, optional): The device to be used for encoding.
             use_openai (bool, optional): Whether to use OpenAI's encoder.
             rate_limit (int, optional): Rate limit for OpenAI API requests.
         """

@@ -1,5 +1,6 @@
 """Module for a datastore containing data for retrieval."""
 import abc
+from typing import Any
 
 
 class Datastore:
