@@ -1,5 +1,6 @@
 """Module for HuggingFace language models."""
 
+from typing import Any
 from llments.lm.lm import LanguageModel
 import json
 
@@ -88,12 +89,150 @@ class HuggingFaceLM(LanguageModel):
         raise NotImplementedError
 
 
+class HuggingFaceLMFitter:
+    """A class responsible for fitting one Hugging Face language model to match another.
+
+    This class provides the interface for adapting a base language model to more
+    closely resemble the target language model.
+    """
+
+    @classmethod
+    def fit(
+        cls,
+        base: HuggingFaceLM,
+        target: LanguageModel,
+        batch_size: int = 32,
+        training_steps: int = 200,
+        output_dir: str = "./training_results",
+        logging_dir: str = "./logs",
+    ) -> LanguageModel:
+        """Fit the language model to a target language model's distribution.
+
+        Args:
+            base: The HF language model to fine-tune.
+            target: The language model that should be fitted to.
+            batch_size: Batch size for training.
+            training_steps: Number of training steps.
+            output_dir: Directory to save training results.
+            logging_dir: Directory to save logs.
+
+        Returns:
+            The fitted language model.
+        """
+        try:
+            from transformers import TrainingArguments, Trainer
+            import torch
+            from torch.utils.data import Dataset
+        except ImportError:
+            raise ImportError(
+                "You need to install 'transformers' and 'torch' packages to use this "
+                "function."
+            )
+
+        # Generate data and prepare training dataset
+        inputs, labels = cls._prepare_training_data(
+            base, target, batch_size, training_steps
+        )
+
+        class TrainingDataset(Dataset):  # type: ignore
+            def __init__(
+                self, encodings: dict[str, torch.Tensor], labels: torch.Tensor
+            ):
+                self.encodings = encodings
+                self.labels = labels
+
+            def __getitem__(self, idx: int) -> dict[str, torch.Tensor]:
+                item = {
+                    key: torch.tensor(val[idx]) for key, val in self.encodings.items()
+                }
+                item["labels"] = torch.tensor(self.labels[idx])
+                return item
+
+            def __len__(self) -> int:
+                return len(self.labels)
+
+        dataset = TrainingDataset(inputs["input_ids"], labels)
+
+        num_train_epochs = training_steps / (len(dataset) / batch_size)
+
+        training_args = TrainingArguments(
+            output_dir=output_dir,
+            num_train_epochs=num_train_epochs,
+            per_device_train_batch_size=batch_size,
+            logging_dir=logging_dir,
+            logging_steps=10,
+        )
+
+        trainer = Trainer(
+            model=base.text_generator.model,
+            args=training_args,
+            train_dataset=dataset,
+        )
+
+        trainer.train()
+
+        return base
+
+    @classmethod
+    def _prepare_training_data(
+        cls,
+        base: HuggingFaceLM,
+        target: LanguageModel,
+        batch_size: int,
+        training_steps: int,
+    ) -> tuple[dict[str, Any], Any]:
+        """Generate data from the target language model, using generate() function.
+
+        Helper function of fit().
+
+        Args:
+            base: model to fit.
+            target: target language model.
+            batch_size: Number of examples processed in one step.
+            training_steps: Number of steps to train.
+
+        Returns:
+            inputs: Generated data (type: HF BatchEncoding): result from calling HF
+                tokenizer.
+            labels: "Up shift" each token to create the labels.
+        """
+        try:
+            import torch
+        except ImportError:
+            raise ImportError(
+                "You need to install/import 'torch' package to use this function."
+            )
+
+        samples = target.generate(
+            condition=None,
+            do_sample=True,
+            temperature=1.0,
+            num_return_sequences=batch_size * training_steps,
+        )
+
+        tokenizer = base.text_generator.tokenizer
+        inputs = tokenizer(
+            samples, padding=True, truncation=True, return_tensors="pt"
+        )  # return pytorch tensor
+
+        labels = inputs.input_ids[:, 1:].clone()
+        labels = torch.nn.functional.pad(
+            labels, (0, 1), value=-100
+        )  # Pad with -100 on the right
+
+        # Adjust input_ids by removing the last token to match labels' size
+        inputs.input_ids = inputs.input_ids[:, :-1]
+
+        return inputs, labels
+
+
 def load_from_spec(spec_file: str) -> HuggingFaceLM:
     """Load a language model from a specification file.
 
     Args:
         spec_file: The path to the specification file.
-        The file should specifies the model identifier "model" and any other relevant parameters such as "device".
+            The file should specifies the model identifier "model" and any other
+            relevant parameters such as "device".
 
     Returns:
         A HuggingFaceLM instance.
