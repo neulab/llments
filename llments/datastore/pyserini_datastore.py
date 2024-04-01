@@ -17,7 +17,7 @@ class PyseriniDatastore(Datastore):
         to_faiss: bool = False,
         device: str = "cpu",
         delimiter: str = "\n",
-        docid_field: str | None = None,
+        docid_field: str = "id",
         batch_size: int = 64,
         max_length: int = 256,
         dimension: int = 768,
@@ -80,16 +80,16 @@ class PyseriniDatastore(Datastore):
         to_faiss: bool = False,
         device: str = "cpu",
         delimiter: str = "\n",
-        docid_field: str = None,
+        docid_field: str = "id",
         batch_size: int = 64,
         max_length: int = 256,
         dimension: int = 768,
-        prefix: str = None,
-        pooling: str = None,
-        l2_norm: bool = None,
+        prefix: str | None = None,
+        pooling: str = "cls",
+        l2_norm: bool = False,
         use_openai: bool = False,
         rate_limit: int = 3500,
-    ):
+    ) -> None:
         """Encodes documents using the specified parameters.
 
         Args:
@@ -253,7 +253,7 @@ class PyseriniDatastore(Datastore):
         device: str = 'cpu',
         pooling: str = 'cls',
         l2_norm: bool = False,
-    ) -> list[object]:
+    ) -> Any:
         """Retrieve documents based on the specified searcher name.
 
         Args:
@@ -265,7 +265,7 @@ class PyseriniDatastore(Datastore):
             l2_norm (bool, optional): Whether to apply L2 normalization to embeddings. Defaults to False.
 
         Returns:
-            list[object]: Retrieved result objects.
+            Any: Retrieved result objects.
         """
         try:
             from pyserini.search import FaissSearcher

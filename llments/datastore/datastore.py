@@ -15,7 +15,7 @@ class Datastore:
         device: str | None=None,
         pooling: str | None=None,
         l2_norm: bool | None=None,
-    ) -> object:
+    ) -> Any:
         """Retrieve documents based on the specified parameters.
 
         Args:
@@ -27,6 +27,6 @@ class Datastore:
             l2_norm (bool, optional): Whether to apply L2 normalization to embeddings. Defaults to False.
 
         Returns:
-            object: Retrieved result object.
+            Any: Retrieved result object.
         """
         pass
