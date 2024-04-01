@@ -15,7 +15,7 @@ class RAGLanguageModel(LanguageModel):
         query_encoder: str | None=None,
         device: str = "cpu",
         pooling: str = "cls",
-        l2_norm: bool = "False",
+        l2_norm: bool = False,
     ) -> None:
         """Apply retrieval-augmented generation over a datastore.
 
@@ -24,9 +24,9 @@ class RAGLanguageModel(LanguageModel):
             datastore (Datastore): The datastore object for document index.
             max_results (int, optional): Maximum number of results to retrieve. Defaults to 1.
             query_encoder (str, optional): Name of the encoder to be used if searcher is "faiss". Defaults to None.
-            device (str, optional): Device to be used for encoding. Defaults to None.
-            pooling (str, optional): Type of pooling to be used for encoding. Defaults to None.
-            l2_norm (bool, optional): Whether to apply L2 normalization to embeddings. Defaults to None.
+            device (str, optional): Device to be used for encoding. Defaults to cpu.
+            pooling (str, optional): Type of pooling to be used for encoding. Defaults to cls.
+            l2_norm (bool, optional): Whether to apply L2 normalization to embeddings. Defaults to False.
         """
         self.base = base
         self.datastore = datastore
@@ -89,7 +89,9 @@ class RAGLanguageModel(LanguageModel):
         )
 
         context = ' '.join([self.doc_dict[str(key.docid)] for key in top_docs])
-        prompt = "Please answer the following question, given its context.\nQuestion: " + condition + "\nContext: " + context + "\nAnswer: "
+        prompt = None
+        if condition is not None:
+            prompt = "Please answer the following question, given its context.\nQuestion: " + condition + "\nContext: " + context + "\nAnswer: "
         
         lm_response = self.base.generate(
             condition=prompt,
