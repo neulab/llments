@@ -12,9 +12,9 @@ class Datastore:
         query: str,
         max_results: int,
         query_encoder: str | None=None,
-        device: str | None=None,
-        pooling: str | None=None,
-        l2_norm: bool | None=None,
+        device: str = 'cpu',
+        pooling: str = 'cls',
+        l2_norm: bool = False,
     ) -> Any:
         """Retrieve documents based on the specified parameters.
 

@@ -249,7 +249,7 @@ class PyseriniDatastore(Datastore):
         self,
         query: str,
         max_results: int,
-        query_encoder: str,
+        query_encoder: str | None=None,
         device: str = 'cpu',
         pooling: str = 'cls',
         l2_norm: bool = False,
@@ -259,7 +259,7 @@ class PyseriniDatastore(Datastore):
         Args:
             query (str): Query string to search for.
             max_results (int): Maximum number of results to retrieve.
-            query_encoder (str): Name of the encoder to be used.
+            query_encoder (str, optional): Name of the encoder to be used.
             device (str, optional): Device to be used for encoding. Defaults to 'cpu'.
             pooling (str, optional): Type of pooling to be used for encoding. Defaults to 'cls'.
             l2_norm (bool, optional): Whether to apply L2 normalization to embeddings. Defaults to False.
