@@ -6,6 +6,8 @@ from typing import Any
 class Datastore:
     """A datastore containing data for retrieval."""
 
+    document_path: str
+
     @abc.abstractmethod
     def retrieve(
         self,
