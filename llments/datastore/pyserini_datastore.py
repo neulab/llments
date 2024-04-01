@@ -11,20 +11,20 @@ class PyseriniDatastore(Datastore):
         self,
         index_path: str,
         document_path: str,
-        index_encoder=None,
-        fields=None,
-        to_faiss=False,
-        device="cpu",
-        delimiter="\n",
-        docid_field=None,
-        batch_size=64,
-        max_length=256,
-        dimension=768,
-        prefix=None,
-        pooling=None,
-        l2_norm=None,
-        use_openai=False,
-        rate_limit=3500,
+        index_encoder: str = None,
+        fields: list[str] = None,
+        to_faiss: bool = False,
+        device: str = "cpu",
+        delimiter: str = "\n",
+        docid_field: str = None,
+        batch_size: int = 64,
+        max_length: int = 256,
+        dimension: int = 768,
+        prefix: str = None,
+        pooling: str = None,
+        l2_norm: bool = None,
+        use_openai: bool = False,
+        rate_limit: int = 3500,
     ):
         """Initializes a PyseriniDatastore object.
 
@@ -75,19 +75,19 @@ class PyseriniDatastore(Datastore):
     def encode(
         self,
         index_encoder: str,
-        fields: list,
-        delimiter="\n",
-        docid_field=None,
-        batch_size=64,
-        max_length=256,
-        dimension=768,
-        prefix=None,
-        pooling=None,
-        l2_norm=None,
-        to_faiss=False,
-        device="cpu",
-        use_openai=False,
-        rate_limit=3500,
+        fields: list[str],
+        delimiter: str = "\n",
+        docid_field: str = None,
+        batch_size: int = 64,
+        max_length: int = 256,
+        dimension: int = 768,
+        prefix: str = None,
+        pooling: str = None,
+        l2_norm: bool = None,
+        to_faiss: bool = False,
+        device: str = "cpu",
+        use_openai: bool = False,
+        rate_limit: int = 3500,
     ):
         """Encodes documents using the specified parameters.
 
@@ -243,3 +243,39 @@ class PyseriniDatastore(Datastore):
                 embedding_writer.write(batch_info, fields)
 
         print("\nIndex creation completed sucessfully!")
+
+    def retrieve(
+        self,
+        query: str,
+        max_results: int,
+        query_encoder: str,
+        device: str = 'cpu',
+        pooling: str = 'cls',
+        l2_norm: bool = False,
+    ) -> object:
+        """
+        Retrieve documents based on the specified searcher name.
+
+        Args:
+            query (str): Query string to search for.
+            max_results (int): Maximum number of results to retrieve.
+            query_encoder (str): Name of the encoder to be used.
+            device (str, optional): Device to be used for encoding. Defaults to 'cpu'.
+            pooling (str, optional): Type of pooling to be used for encoding. Defaults to 'cls'.
+            l2_norm (bool, optional): Whether to apply L2 normalization to embeddings. Defaults to False.
+
+        Returns:
+            object: Retrieved result object.
+        """
+        try:
+            from pyserini.search import FaissSearcher
+            from pyserini.search.faiss import AutoQueryEncoder
+        except ImportError:
+            raise ImportError(
+                "You need to install the `pyserini` package to use this class."
+            )
+        encoder = AutoQueryEncoder(encoder_dir=query_encoder, device=device, pooling=pooling, l2_norm=l2_norm)
+        searcher = FaissSearcher(self.index_path, encoder)
+        hits = searcher.search(query, k=max_results)
+        return hits
+    
