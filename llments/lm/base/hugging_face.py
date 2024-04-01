@@ -77,10 +77,11 @@ class HuggingFaceLM(LanguageModel):
             )
         set_seed(seed)
 
-    def calculate_probability(self, output: str) -> float:
+    def calculate_probability(self, condition: str | None, output: str) -> float:
         """Calculate the probability of an output given the language model.
 
         Args:
+            condition: The conditioning sequence for the output.
             output: The output sequence for which the probability is calculated.
 
         Returns:
