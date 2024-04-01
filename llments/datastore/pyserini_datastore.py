@@ -254,8 +254,7 @@ class PyseriniDatastore(Datastore):
         pooling: str = 'cls',
         l2_norm: bool = False,
     ) -> object:
-        """
-        Retrieve documents based on the specified searcher name.
+        """Retrieve documents based on the specified searcher name.
 
         Args:
             query (str): Query string to search for.
