@@ -9,7 +9,7 @@ class Datastore:
     @abc.abstractmethod
     def retrieve(
         self,
-        query: str,
+        query: str | None,
         max_results: int,
         query_encoder: str | None=None,
         device: str = 'cpu',

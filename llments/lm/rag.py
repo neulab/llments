@@ -13,9 +13,9 @@ class RAGLanguageModel(LanguageModel):
         datastore: Datastore,
         max_results: int = 1,
         query_encoder: str | None=None,
-        device: str | None=None,
-        pooling: str | None=None,
-        l2_norm: bool | None=None,
+        device: str = "cpu",
+        pooling: str = "cls",
+        l2_norm: bool = "False",
     ) -> None:
         """Apply retrieval-augmented generation over a datastore.
 
