@@ -1,8 +1,12 @@
+"""Module for RAG language model."""
+
 import json
 from llments.datastore.datastore import Datastore
 from llments.lm.lm import LanguageModel
 
 class RAGLanguageModel(LanguageModel):
+    """RAGLanguageModel class for performing Retrieval Augmented Generation."""
+
     def __init__(
         self,
         base: LanguageModel,
