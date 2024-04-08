@@ -31,12 +31,13 @@ class HuggingFaceLM(LanguageModel):
 
     def generate(
         self,
-        condition: str | None,
+        condition: str | list[dict[str, str]] | None,
         do_sample: bool = False,
         max_length: int | None = None,
+        max_new_tokens: int | None = None,
         temperature: float = 1.0,
         num_return_sequences: int = 1,
-    ) -> list[str]:
+    ) -> list[str] | list[list[dict[str, str]]]:
         """Generate an output given the language model.
 
         Args:
@@ -45,6 +46,7 @@ class HuggingFaceLM(LanguageModel):
             do_sample: Whether to use sampling or greedy decoding.
             max_length: The maximum length of the output sequence,
                 (defaults to model max).
+            max_new_tokens: The maximum numbers of tokens to generate, ignoring the number of tokens in the prompt.
             temperature: The value used to module the next token probabilities.
             num_return_sequences: The number of independently computed returned
                 sequences for each element in the batch.
@@ -56,6 +58,7 @@ class HuggingFaceLM(LanguageModel):
             condition,
             do_sample=do_sample,
             max_length=max_length,
+            max_new_tokens=max_new_tokens,
             temperature=temperature,
             num_return_sequences=num_return_sequences,
             clean_up_tokenization_spaces=True,
