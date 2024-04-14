@@ -1,8 +1,9 @@
 """Module for HuggingFace language models."""
 
-from typing import Any
-from llments.lm.lm import LanguageModel
 import json
+from typing import Any
+
+from llments.lm.lm import LanguageModel
 
 
 class HuggingFaceLM(LanguageModel):
@@ -20,7 +21,7 @@ class HuggingFaceLM(LanguageModel):
             device: The device to run the model on.
         """
         try:
-            from transformers import pipeline, TextGenerationPipeline
+            from transformers import TextGenerationPipeline, pipeline
         except ImportError:
             raise ImportError(
                 "You need to install the `transformers` package to use this class."
@@ -34,6 +35,7 @@ class HuggingFaceLM(LanguageModel):
         condition: str | None,
         do_sample: bool = False,
         max_length: int | None = None,
+        max_new_tokens: int | None = None,
         temperature: float = 1.0,
         num_return_sequences: int = 1,
     ) -> list[str]:
@@ -45,6 +47,7 @@ class HuggingFaceLM(LanguageModel):
             do_sample: Whether to use sampling or greedy decoding.
             max_length: The maximum length of the output sequence,
                 (defaults to model max).
+            max_new_tokens: The maximum numbers of tokens to generate, ignoring the number of tokens in the prompt.
             temperature: The value used to module the next token probabilities.
             num_return_sequences: The number of independently computed returned
                 sequences for each element in the batch.
@@ -56,6 +59,7 @@ class HuggingFaceLM(LanguageModel):
             condition,
             do_sample=do_sample,
             max_length=max_length,
+            max_new_tokens=max_new_tokens,
             temperature=temperature,
             num_return_sequences=num_return_sequences,
             clean_up_tokenization_spaces=True,
@@ -68,6 +72,7 @@ class HuggingFaceLM(LanguageModel):
         messages: list[dict[str, str]],
         do_sample: bool = False,
         max_length: int | None = None,
+        max_new_tokens: int | None = None,
         temperature: float = 1.0,
         num_return_sequences: int = 1,
     ) -> list[list[dict[str, str]]]:
@@ -90,6 +95,7 @@ class HuggingFaceLM(LanguageModel):
             do_sample: Whether to use sampling or greedy decoding.
             max_length: The maximum length of the output sequence,
                 (defaults to model max).
+            max_new_tokens: The maximum numbers of tokens to generate, ignoring the number of tokens in the prompt.
             temperature: The value used to module the next token probabilities.
             num_return_sequences: The number of independently computed returned
                 sequences for each element in the batch.
@@ -101,6 +107,7 @@ class HuggingFaceLM(LanguageModel):
             messages,
             do_sample=do_sample,
             max_length=max_length,
+            max_new_tokens=max_new_tokens,
             temperature=temperature,
             num_return_sequences=num_return_sequences,
             clean_up_tokenization_spaces=True,
@@ -166,9 +173,9 @@ class HuggingFaceLMFitter:
             The fitted language model.
         """
         try:
-            from transformers import TrainingArguments, Trainer
             import torch
             from torch.utils.data import Dataset
+            from transformers import Trainer, TrainingArguments
         except ImportError:
             raise ImportError(
                 "You need to install 'transformers' and 'torch' packages to use this "

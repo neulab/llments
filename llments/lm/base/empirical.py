@@ -28,6 +28,7 @@ class EmpiricalDistribution(LanguageModel):
         condition: str | None,
         do_sample: bool = False,
         max_length: int | None = None,
+        max_new_tokens: int | None = None,
         temperature: float = 1.0,
         num_return_sequences: int = 1,
     ) -> list[str]:
@@ -38,6 +39,10 @@ class EmpiricalDistribution(LanguageModel):
             filtered_df = self.data[self.data["text"].str.startswith(condition)]
         if not do_sample:
             raise NotImplementedError("Greedy decoding is not implemented yet.")
+        if max_new_tokens is not None:
+            if max_length is not None:
+                raise ValueError("Specify only one: max_length or max_new_tokens.")
+            max_length = len(condition or "") + max_new_tokens
         if max_length is not None:
             filtered_df = filtered_df[
                 filtered_df["text"].str.split().len() <= max_length
@@ -61,6 +66,7 @@ class EmpiricalDistribution(LanguageModel):
         messages: list[dict[str, str]],
         do_sample: bool = False,
         max_length: int | None = None,
+        max_new_tokens: int | None = None,
         temperature: float = 1.0,
         num_return_sequences: int = 1,
     ) -> list[list[dict[str, str]]]:
@@ -83,6 +89,7 @@ class EmpiricalDistribution(LanguageModel):
             do_sample: Whether to use sampling or greedy decoding.
             max_length: The maximum length of the output sequence,
                 (defaults to model max).
+            max_new_tokens: The maximum numbers of tokens to generate, ignoring the number of tokens in the prompt.
             temperature: The value used to module the next token probabilities.
             num_return_sequences: The number of independently computed returned
                 sequences for each element in the batch.
