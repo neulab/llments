@@ -18,7 +18,8 @@ pip install -r requirements.txt
 
 ### OpenAI API Key
 
-To access and use OpenAI's services (such as GPT models), you must obtain an API key from OpenAI.
+To access and use OpenAI's services (such as GPT models),
+you must obtain an API key from OpenAI.
 After acquiring your API key, enter it in the notebook code.
 Typically, this involves setting a variable or configuring an environment variable.
 For example, in your notebook:
@@ -61,7 +62,15 @@ If you use this example, we would appreciate if you acknowledge
 ```bibtex
 @article{Wang2023LargeLM,
   title={Large Language Models are not Fair Evaluators},
-  author={Peiyi Wang and Lei Li and Liang Chen and Dawei Zhu and Binghuai Lin and Yunbo Cao and Qi Liu and Tianyu Liu and Zhifang Sui},
+  author={Peiyi Wang and
+    Lei Li and
+    Liang Chen and
+    Dawei Zhu and
+    Binghuai Lin and
+    Yunbo Cao and
+    Qi Liu and
+    Tianyu Liu and
+    Zhifang Sui},
   journal={ArXiv},
   year={2023},
   volume={abs/2305.17926},
