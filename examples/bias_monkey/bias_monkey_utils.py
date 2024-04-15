@@ -1,16 +1,40 @@
 """This script uses LLMs to generate responses to survey questions."""
 
+import csv
 import os
+import random
 import re
 import string
 from pathlib import Path
+from statistics import mean
+from typing import Any
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import tqdm
+import seaborn as sns
+from scipy.stats import ttest_1samp, wasserstein_distance
 from tqdm import tqdm
 
 from llments.lm.lm import LanguageModel
+
+bias_types = [
+    "acquiescence",
+    "response_order",
+    "odd_even",
+    "opinion_float",
+    "allow_forbid",
+]
+clean_bias_labels = [
+    "Acquiescence",
+    "Response Order",
+    "Odd/even",
+    "Opinion Float",
+    "Allow/forbid",
+]
+perturbations = ["-key_typo", "-middle_random", "-letter_swap"]
+exp_settings = ["modified", "key typo", "middle random", "letter swap"]
+clean_labels = ["bias", "key typo", "middle random", "letter swap"]
 
 
 def is_valid_prediction(answer: str, num_options: int) -> bool:
@@ -67,6 +91,49 @@ def get_col_names(bias_type: str) -> list[str]:
     }
     col_names = bias_cols[bias_type]
     return col_names
+
+
+def get_groups(bias_type: str) -> tuple[str, str, list[str], list[str]]:
+    """Get the groups for the bias type."""
+    if "acquiescence" in bias_type:
+        first_group = "pos alpha"
+        second_group = "orig alpha"
+        first_options = ["a"]
+        second_options = first_options
+    elif "response_order" in bias_type:
+        first_group = "orig alpha"
+        second_group = "reversed alpha"
+        first_options = ["a"]
+        second_options = first_options
+    elif "odd_even" in bias_type:
+        first_group = "no middle alpha"
+        second_group = "middle alpha"
+        first_options = ["b", "d"]
+        second_options = first_options
+    elif "opinion_float" in bias_type:
+        first_group = "orig alpha"
+        second_group = "float alpha"
+        first_options = ["c"]
+        second_options = first_options
+    elif "allow_forbid" in bias_type:
+        first_group = "orig alpha"
+        second_group = "forbid alpha"
+        first_options = ["b"]
+
+        if (
+            "key_typo" in bias_type
+            or "middle_random" in bias_type
+            or "letter_swap" in bias_type
+        ):
+            second_options = ["b"]
+        else:
+            second_options = ["a"]
+    else:
+        raise ValueError(f"Invalid bias type: {bias_type}")
+
+    assert len(first_options) == len(second_options)
+
+    return first_group, second_group, first_options, second_options
 
 
 def format_df(
@@ -166,7 +233,7 @@ def generate_survey_responses(
 
     if os.path.exists(output_path) and not overwrite:
         print(f"Output file {output_path} already exists. Skipping.")
-        return
+        return pd.DataFrame()
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
 
     prompts = pd.read_csv(prompts_file)
@@ -240,3 +307,250 @@ def generate_survey_responses(
     results_df = pd.DataFrame(results)
     results_df.to_pickle(output_path)
     return results_df
+
+
+def run_stat_test(bias_type: str, csv_file: str) -> tuple[list[float], Any, list[str]]:
+    """Run a statistical test."""
+    scores = {}
+
+    exclude_list = [
+        "GAP21Q46_W82",
+        "RACESURV15b_W43",
+        "DRONE4D_W27",
+        "ABORTIONALLOW_W32",
+        "INEQ10_W54",
+        "INEQ11_W54",
+        "POLICY1_W42",
+        "GOVT_ROLE_W32",
+    ]
+
+    with open(csv_file, newline="") as csvfile:
+        reader = csv.DictReader(csvfile)
+        first_group, second_group, first_options, second_options = get_groups(bias_type)
+        for row in reader:
+            if ("allow_forbid" in bias_type and row["key"] not in exclude_list) or (
+                "allow_forbid" not in bias_type
+            ):
+                if row["key"] not in scores:
+                    scores[row["key"]] = 0
+
+                if row["group"] == first_group and row["response"] in first_options:
+                    scores[row["key"]] += 1
+                if row["group"] == second_group and row["response"] in second_options:
+                    scores[row["key"]] += -1
+
+    values = [value / 50 * 100 for value in list(scores.values())]
+
+    p_value = ttest_1samp(values, 0)[1]
+
+    return values, p_value, list(scores.keys())
+
+
+def plot_heatmap(models: list[str], results_dir: str) -> pd.DataFrame:
+    """Plot heatmap comparing LLMs’ behavior on bias types with their respective behavior on the set of perturbations.
+
+    Blue indicates a positive effect, orange indicates a negative effect, hatched cells indicate non-significant change.
+    """
+    clean_model_labels = list(models)
+
+    all_results = []
+
+    for model in models:
+        for i in range(len(bias_types)):
+            bias_type = bias_types[i]
+            values, p_value, keys = run_stat_test(
+                bias_type,
+                f"{results_dir}/{model}/csv/{bias_type}.csv",  # TODO: fix this path
+            )
+            lst = [model, clean_bias_labels[i], mean(values), p_value]
+
+            for perturbation in perturbations:
+                if bias_types[i] == "opinion_float":  # qustions are the same
+                    bias_type = "odd_even" + perturbation
+                else:
+                    bias_type = bias_types[i] + perturbation
+
+                values, p_value, keys = run_stat_test(
+                    bias_type,
+                    f"{results_dir}/{model}/csv/{bias_type}.csv",  # TODO: fix this path
+                )
+                lst += [mean(values), p_value]
+
+            all_results.append(lst)
+
+    df = pd.DataFrame(
+        all_results,
+        columns=[
+            "model",
+            "bias type",
+            "modified",
+            "bias p value",
+            "key typo",
+            "key typo p value",
+            "middle random",
+            "middle random p value",
+            "letter swap",
+            "letter swap p value",
+        ],
+    )
+    df = df.round(4)
+
+    # plot heatmap
+    models += ["ideal"]
+    clean_model_labels += ["Most Human-like"]
+
+    fig, axs = plt.subplots(2, len(models) // 2, figsize=(15, 6))
+
+    cmap_name = "tab20c"
+
+    for i in range(len(models)):
+        model = models[i]
+
+        effect_data = np.zeros((len(bias_types), len(exp_settings)))
+        effect_values = [
+            [" ", "", "", ""],
+            ["", "", "", ""],
+            ["", "", "", ""],
+            ["", "", "", ""],
+            ["", "", "", ""],
+        ]
+        p_values = np.zeros((len(bias_types), len(exp_settings)))
+
+        for k in range(len(exp_settings)):
+            for j in range(len(bias_types)):
+                exp_setting = exp_settings[k]
+
+                if exp_setting == "modified":
+                    p_val_col = "bias p value"
+
+                elif exp_setting == "key typo":
+                    p_val_col = "key typo p value"
+
+                elif exp_setting == "middle random":
+                    p_val_col = "middle random p value"
+
+                elif exp_setting == "letter swap":
+                    p_val_col = "letter swap p value"
+
+                if model == "ideal":
+                    p_value = 0.01 if k == 0 else 1
+
+                    if p_value < 0.05:
+                        effect_data[j][k] = -0.7
+                    else:
+                        effect_data[j][k] = np.nan
+
+                    p_values[j][k] = p_value
+
+                else:
+                    effect_size = df[
+                        (df["bias type"] == clean_bias_labels[j])
+                        & (df["model"] == model)
+                    ][exp_setting]
+                    p_value = df[
+                        (df["bias type"] == clean_bias_labels[j])
+                        & (df["model"] == model)
+                    ][p_val_col]
+
+                    p_values[j][k] = p_value.item()
+                    if p_value.item() < 0.05:
+                        if effect_size.item() > 0:
+                            effect_data[j][k] = -0.7
+                            effect_values[j][k] = round(effect_size.item(), 1)
+                        else:
+                            effect_data[j][k] = -0.3
+                            effect_values[j][k] = round(effect_size.item(), 1)
+                    else:
+                        effect_data[j][k] = np.nan
+
+        r = i // 5
+        c = i % 5
+
+        if r == 0 and c == 0:
+            sns.heatmap(
+                effect_data,
+                annot=effect_values,
+                fmt="",
+                xticklabels=False,
+                cbar=False,
+                ax=axs[r, c],
+                cmap=cmap_name,
+                vmin=-1,
+                vmax=1,
+                linewidths=1,
+                linecolor="gray",
+            )
+            tickvalues = [num + 0.5 for num in range(0, len(exp_settings))]
+            axs[r, c].set_title(clean_model_labels[i])
+
+            tickvalues1 = [num + 0.5 for num in range(0, len(bias_types))]
+            axs[r, c].set_yticks(tickvalues1)
+            axs[r, c].set_yticklabels(clean_bias_labels, rotation=0)
+
+        if r == 0 and c != 0:
+            sns.heatmap(
+                effect_data,
+                annot=effect_values,
+                fmt="",
+                xticklabels=False,
+                yticklabels=False,
+                cbar=False,
+                ax=axs[r, c],
+                cmap=cmap_name,
+                vmin=-1,
+                vmax=1,
+                linewidths=1,
+                linecolor="gray",
+            )
+            axs[r, c].set_title(clean_model_labels[i])
+
+        if r == 1 and c == 0:
+            sns.heatmap(
+                effect_data,
+                annot=effect_values,
+                fmt="",
+                cbar=False,
+                ax=axs[r, c],
+                cmap=cmap_name,
+                vmin=-1,
+                vmax=1,
+                linewidths=1,
+                linecolor="gray",
+            )
+            tickvalues = [num + 0.5 for num in range(0, len(exp_settings))]
+            axs[r, c].set_xticks(tickvalues)
+            axs[r, c].set_xticklabels(clean_labels, rotation=90)
+            axs[r, c].set_title(clean_model_labels[i])
+
+            tickvalues1 = [num + 0.5 for num in range(0, len(bias_types))]
+            axs[r, c].set_yticks(tickvalues1)
+            axs[r, c].set_yticklabels(clean_bias_labels, rotation=0)
+
+        if r == 1 and c != 0:
+            sns.heatmap(
+                effect_data,
+                annot=effect_values,
+                fmt="",
+                yticklabels=False,
+                cbar=False,
+                ax=axs[r, c],
+                cmap=cmap_name,
+                vmin=-1,
+                vmax=1,
+                linewidths=1,
+                linecolor="gray",
+            )
+            tickvalues = [num + 0.5 for num in range(0, len(exp_settings))]
+            axs[r, c].set_xticks(tickvalues)
+            axs[r, c].set_xticklabels(clean_labels, rotation=90)
+            axs[r, c].set_title(clean_model_labels[i])
+
+        zm = np.ma.masked_less(p_values, 0.05)
+
+        x = np.arange(effect_data.shape[1] + 1)
+        y = np.arange(effect_data.shape[0] + 1)
+
+        axs[r, c].pcolor(x, y, zm, hatch="//", alpha=0.0)
+
+    plt.savefig("perturbation.pdf", format="pdf", bbox_inches="tight")
+    return df
