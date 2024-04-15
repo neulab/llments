@@ -3,20 +3,13 @@
 import os
 from litellm import completion
 
-"""Set ENV variables.
-
-The language model's API key must be specified as an environment variable.
-The name of the environment variable depends on the model in use.
-For example: For OpenAI models the API key is set as OPENAI_API_KEY
-"""
-
-os.environ["API_KEY"] = "your-api-key"
-
 class APIBasedLM:
     """Base class for API-Based Language Models.
     
     This class represents an API-based language model that generates responses
-    using a specified API key and model name.
+    using the API key of the model and the model name. The user sets the API Key 
+    as an environment variable, and the model name is passed while creating 
+    an instance of the class.
 
     Attributes:
         model_name (str): The name of the language model.
