@@ -4,6 +4,7 @@ from litellm import completion
 
 class APIBasedLM:
     """Base class for API-Based Language Models.
+    
     This class represents an API-based language model that generates responses
     using a specified API key and model name.
 
@@ -12,7 +13,7 @@ class APIBasedLM:
         model_name (str): The name of the language model.
     """
     
-    def __init__(self, api_key, model_name) -> None:
+    def __init__(self, api_key: str, model_name: str) -> None:
         """Initialize the APIBasedLM instance.
 
         Args:
@@ -22,7 +23,7 @@ class APIBasedLM:
         self.api_key = api_key
         self.model_name = model_name
     
-    def generate_response(self, prompt) -> str:
+    def generate_response(self, prompt: str) -> str:
         """Generate a response based on the given prompt.
 
         This method sends a prompt to the language model API and retrieves
@@ -38,4 +39,4 @@ class APIBasedLM:
             model=self.model_name,
             messages=[{"content": prompt, "role": "user"}]
         )
-        return response['choices'][0]['message']['content']
+        return str(response['choices'][0]['message']['content'])
