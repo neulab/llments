@@ -10,7 +10,7 @@ class APIBasedLM:
         api_key (str): The API key used for accessing the language model.
         model_name (str): The name of the language model.
     """
-    def __init__(self, api_key, model_name):
+    def __init__(self, api_key, model_name) -> None:
         """Initialize the APIBasedLM instance.
 
         Args:
@@ -20,7 +20,7 @@ class APIBasedLM:
         self.api_key = api_key
         self.model_name = model_name
     
-    def generate_response(self, prompt):
+    def generate_response(self, prompt) -> str:
         """Generate a response based on the given prompt.
 
         This method sends a prompt to the language model API and retrieves
