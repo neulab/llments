@@ -1,4 +1,5 @@
-import os
+"""Base class for API-Based Language Models."""
+
 from litellm import completion
 
 class APIBasedLM:
@@ -10,6 +11,7 @@ class APIBasedLM:
         api_key (str): The API key used for accessing the language model.
         model_name (str): The name of the language model.
     """
+    
     def __init__(self, api_key, model_name) -> None:
         """Initialize the APIBasedLM instance.
 
