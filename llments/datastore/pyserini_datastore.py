@@ -49,6 +49,10 @@ class PyseriniDatastore(Datastore):
         """
         self.index_path = index_path
         self.document_path = document_path
+        self.device = device
+        self.l2_norm = l2_norm
+        self.pooling = pooling
+        self.index_encoder = index_encoder
 
         if not os.path.exists(index_path):
             print("Creating the Datastore...")
@@ -249,10 +253,6 @@ class PyseriniDatastore(Datastore):
         self,
         query: str | None,
         max_results: int,
-        query_encoder: str | None=None,
-        device: str = 'cpu',
-        pooling: str = 'cls',
-        l2_norm: bool = False,
     ) -> Any:
         """Retrieve documents based on the specified searcher name.
 
@@ -274,7 +274,7 @@ class PyseriniDatastore(Datastore):
             raise ImportError(
                 "You need to install the `pyserini` package to use this class."
             )
-        encoder = AutoQueryEncoder(encoder_dir=query_encoder, device=device, pooling=pooling, l2_norm=l2_norm)
+        encoder = AutoQueryEncoder(encoder_dir=self.index_encoder, device=self.device, pooling=self.pooling, l2_norm=self.l2_norm)
         searcher = FaissSearcher(self.index_path, encoder)
         hits = searcher.search(query, k=max_results)
         return hits
