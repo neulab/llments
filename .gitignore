@@ -3,3 +3,4 @@ build
 llments.egg-info
 .vscode
 .pytest_cache
+.DS_Store
