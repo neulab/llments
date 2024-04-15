@@ -7,7 +7,8 @@ critically examines the LLMs-as-evaluator paradigm.
 ## Dependencies
 
 To better align with the original implementation in the paper,
-we recommend using the version of the dependencies in the `requirements.txt` file. You can install the dependencies by running the following command:
+we recommend using the version of the dependencies in the `requirements.txt` file.
+You can install the dependencies by running the following command:
 
 ```bash
 pip install -r requirements.txt
@@ -17,7 +18,10 @@ pip install -r requirements.txt
 
 ### OpenAI API Key
 
-To access and use OpenAI's services (such as GPT models), you must obtain an API key from OpenAI. After acquiring your API key, enter it in the notebook code. Typically, this involves setting a variable or configuring an environment variable. For example, in your notebook:
+To access and use OpenAI's services (such as GPT models), you must obtain an API key from OpenAI.
+After acquiring your API key, enter it in the notebook code.
+Typically, this involves setting a variable or configuring an environment variable.
+For example, in your notebook:
 
 ```python
 os.environ["OPENAI_API_KEY"] = "your-openai-api-key-here"
