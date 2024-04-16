@@ -9,25 +9,30 @@ class HuggingFaceLM(LanguageModel):
     """A language model that uses the HuggingFace library."""
 
     def __init__(
-        self,
-        model: str,
-        device: str | None = None,
+        self, model: str, device: str | None = None, cache_dir: str = "cache_dir"
     ):
         """Initialize a HuggingFaceLM.
 
         Args:
             model: The name of the model.
             device: The device to run the model on.
+            cache_dir: Path to a directory in which a downloaded pretrained model image processor should be cached
+                    if the standard cache should not be used.
         """
         try:
-            from transformers import pipeline, TextGenerationPipeline
+            from transformers import AutoTokenizer, AutoModelForCausalLM
         except ImportError:
             raise ImportError(
                 "You need to install the `transformers` package to use this class."
             )
-        self.text_generator: TextGenerationPipeline = pipeline(
-            "text-generation", model=model, device=device
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            model, trust_remote_code=True
+        )  # use the same tokenizer as the model
+        self.model = AutoModelForCausalLM.from_pretrained(
+            model, do_sample=True, use_cache=True, cache_dir=cache_dir
         )
+        self.device = device or "cpu"
+        self.model.to(self.device)
 
     def generate(
         self,
@@ -52,16 +57,21 @@ class HuggingFaceLM(LanguageModel):
         Returns:
             str: A sampled output sequence from the language model.
         """
-        results = self.text_generator(
-            condition,
-            do_sample=do_sample,
+        inputs = self.tokenizer(
+            condition, return_tensors="pt", truncation=True, max_length=max_length
+        ).to(self.device)
+        outputs = self.model.generate(
+            **inputs,
             max_length=max_length,
             temperature=temperature,
             num_return_sequences=num_return_sequences,
-            clean_up_tokenization_spaces=True,
-            truncation=max_length is not None,
+            do_sample=do_sample,
         )
-        return [res["generated_text"] for res in results]
+
+        return [
+            self.tokenizer.decode(output, skip_special_tokens=True)
+            for output in outputs
+        ]  # decode output tokens to strings
 
     def set_seed(self, seed: int) -> None:
         """Set the seed for the language model.
@@ -102,26 +112,53 @@ class HuggingFaceLMFitter:
         cls,
         base: HuggingFaceLM,
         target: LanguageModel,
-        batch_size: int = 32,
-        training_steps: int = 200,
-        output_dir: str = "./training_results",
+        batch_size: int = 8,  # batch size per device
+        training_steps: int = 200,  # ie. max_steps
+        training_epochs: float = 3.0,
+        output_dir: str = "./training_results",  # ie. checkpoint_dir
         logging_dir: str = "./logs",
+        do_train: bool = False,
+        do_eval: bool = False,
+        learning_rate: float = 5e-05,
+        warmup_steps: int = 0,
+        max_grad_norm: float = 1.0,
+        evalution_strategy: str = "no",
+        eval_steps: int = 500,
+        prediciton_loss_only: bool = False,
+        optim: str = "adamw_torch",
+        logging_steps: int = 500,
     ) -> LanguageModel:
         """Fit the language model to a target language model's distribution.
 
         Args:
             base: The HF language model to fine-tune.
             target: The language model that should be fitted to.
-            batch_size: Batch size for training.
+            batch_size: The batch size per GPU/XPU/TPU/MPS/NPU core/CPU for training and evaluation.
             training_steps: Number of training steps.
+            training_epochs: Number of iterations to go through the entire dataset.
             output_dir: Directory to save training results.
             logging_dir: Directory to save logs.
+            do_train: Whether to run training or not.
+            do_eval: Whether to run evaluation on the validation set or not.
+                        Will be set to True if evaluation_strategy is different from "no".
+            learning_rate: The initial learning rate for AdamW optimizer.
+            warmup_steps: Number of steps used for a linear warmup from 0 to learning_rate.
+            max_grad_norm: Maximum gradient norm (for gradient clipping).
+            evalution_strategy: The evaluation strategy to adopt during training.
+            eval_steps: Number of update steps between two evaluations if evaluation_strategy="steps".
+            prediciton_loss_only: When performing evaluation and generating predictions, only returns the loss.
+            optim: The optimizer to use. Can only choose from a list of names.
+            logging_steps: Number of update steps between two logs if logging_strategy="steps".
 
         Returns:
             The fitted language model.
         """
         try:
-            from transformers import TrainingArguments, Trainer
+            from transformers import (
+                TrainingArguments,
+                Trainer,
+                DataCollatorForLanguageModeling,
+            )
             import torch
             from torch.utils.data import Dataset
         except ImportError:
@@ -154,19 +191,51 @@ class HuggingFaceLMFitter:
 
         dataset = TrainingDataset(inputs["input_ids"], labels)
 
-        num_train_epochs = training_steps / (len(dataset) / batch_size)
+        # train_epochs = training_steps / (len(dataset) / batch_size)
 
-        training_args = TrainingArguments(
-            output_dir=output_dir,
-            num_train_epochs=num_train_epochs,
-            per_device_train_batch_size=batch_size,
-            logging_dir=logging_dir,
-            logging_steps=10,
-        )
+        if training_epochs != 3.0:  # train using (training_steps, batch_size)
+            training_args = TrainingArguments(
+                output_dir=output_dir,
+                do_train=do_train,
+                do_eval=do_eval,
+                per_device_train_batch_size=batch_size,
+                per_device_eval_batch_size=batch_size,
+                learning_rate=learning_rate,
+                warmup_steps=warmup_steps,
+                max_grad_norm=max_grad_norm,
+                max_steps=training_steps,  # use steps here
+                optim=optim,
+                evaluation_strategy=evalution_strategy,
+                eval_steps=eval_steps,
+                prediction_loss_only=prediciton_loss_only,
+                logging_dir=logging_dir,
+                logging_steps=logging_steps,
+            )
+        else:  # train using (epochs, batch_size)
+            training_args = TrainingArguments(
+                output_dir=output_dir,
+                do_train=do_train,
+                do_eval=do_eval,
+                per_device_train_batch_size=batch_size,
+                per_device_eval_batch_size=batch_size,
+                learning_rate=learning_rate,
+                warmup_steps=warmup_steps,
+                max_grad_norm=max_grad_norm,
+                num_train_epochs=training_epochs,  # use epochs here
+                optim=optim,
+                evaluation_strategy=evalution_strategy,
+                eval_steps=eval_steps,
+                prediction_loss_only=prediciton_loss_only,
+                logging_dir=logging_dir,
+                logging_steps=logging_steps,
+            )
 
         trainer = Trainer(
-            model=base.text_generator.model,
+            model=base.model,
             args=training_args,
+            data_collator=DataCollatorForLanguageModeling(
+                tokenizer=base.tokenizer, mlm=False
+            ),
             train_dataset=dataset,
         )
 
@@ -211,7 +280,7 @@ class HuggingFaceLMFitter:
             num_return_sequences=batch_size * training_steps,
         )
 
-        tokenizer = base.text_generator.tokenizer
+        tokenizer = base.tokenizer
         inputs = tokenizer(
             samples, padding=True, truncation=True, return_tensors="pt"
         )  # return pytorch tensor
