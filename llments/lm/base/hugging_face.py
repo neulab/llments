@@ -209,7 +209,7 @@ class HuggingFaceLMFitter:
             max_grad_norm: Maximum gradient norm (for gradient clipping).
             evalution_strategy: The evaluation strategy to adopt during training.
             eval_steps: Number of update steps between two evaluations if evaluation_strategy="steps".
-            prediciton_loss_only: When performing evaluation and generating predictions, only returns the loss.
+            prediction_loss_only: When performing evaluation and generating predictions, only returns the loss.
             optim: The optimizer to use. Can only choose from a list of names.
             logging_steps: Number of update steps between two logs if logging_strategy="steps".
 
@@ -271,7 +271,7 @@ class HuggingFaceLMFitter:
                 optim=optim,
                 evaluation_strategy=evalution_strategy,
                 eval_steps=eval_steps,
-                prediction_loss_only=prediciton_loss_only,
+                prediction_loss_only=prediction_loss_only,
                 logging_dir=logging_dir,
                 logging_steps=logging_steps,
             )
