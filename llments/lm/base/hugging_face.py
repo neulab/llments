@@ -187,7 +187,7 @@ class HuggingFaceLMFitter:
         max_grad_norm: float = 1.0,
         evalution_strategy: str = "no",
         eval_steps: int = 500,
-        prediciton_loss_only: bool = False,
+        prediction_loss_only: bool = False,
         optim: str = "adamw_torch",
         logging_steps: int = 500,
     ) -> LanguageModel:
