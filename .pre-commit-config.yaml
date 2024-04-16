@@ -9,6 +9,7 @@ repos:
     rev: v1.8.0
     hooks:
       - id: mypy
+        args: [--strict, --ignore-missing-imports]
   - repo: https://github.com/DavidAnson/markdownlint-cli2
     rev: v0.12.1
     hooks:

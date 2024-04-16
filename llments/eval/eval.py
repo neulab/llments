@@ -1,3 +1,5 @@
+"""A module defining the superclass for evaluators."""
+
 import abc
 import dataclasses
 import tqdm
@@ -5,6 +7,8 @@ import tqdm
 
 @dataclasses.dataclass
 class EvalContext:
+    """A context for evaluating a hypothesized string."""
+
     ...
 
 
@@ -35,7 +39,7 @@ class Evaluator:
 
         Args:
             hyps: A list of hypothesized strings (e.g. system outputs).
-            context: The reference context to condition on.
+            contexts: The reference context to condition on.
             minibatch_size: The size of the minibatch to use,
                 None guesses a good size automatically.
             show_progress: Whether to show a progress bar.
