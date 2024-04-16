@@ -289,7 +289,7 @@ class HuggingFaceLMFitter:
                 optim=optim,
                 evaluation_strategy=evalution_strategy,
                 eval_steps=eval_steps,
-                prediction_loss_only=predicition_loss_only,
+                prediction_loss_only=prediction_loss_only,
                 logging_dir=logging_dir,
                 logging_steps=logging_steps,
             )
