@@ -66,60 +66,12 @@ class HuggingFaceLM(LanguageModel):
         outputs = self.model.generate(
             **inputs,
             max_length=max_length,
-            max_new_tokens=max_new_tokens,
-            temperature=temperature,
-            num_return_sequences=num_return_sequences,
-            clean_up_tokenization_spaces=True,
-            truncation=max_length is not None,
-        )
-        return [res["generated_text"] for res in results]
-
-    def chat_generate(
-        self,
-        messages: list[dict[str, str]],
-        do_sample: bool = False,
-        max_length: int | None = None,
-        max_new_tokens: int | None = None,
-        temperature: float = 1.0,
-        num_return_sequences: int = 1,
-    ) -> list[list[dict[str, str]]]:
-        """Generate an output given a chat context.
-
-        Args:
-            messages: A list of dictionaries, each representing a message in the chat context. Each dictionary should contain the following keys:
-            - "role": The role of the entity sending the message. This can be "system", "user", etc.
-            - "content": The actual content of the message. Example:
-            [
-                {
-                    "role": "system",
-                    "content": "You are a friendly chatbot",
-                },
-                {
-                    "role": "user",
-                    "content": "How many helicopters can a human eat in one sitting?"
-                },
-            ]
-            do_sample: Whether to use sampling or greedy decoding.
-            max_length: The maximum length of the output sequence,
-                (defaults to model max).
-            max_new_tokens: The maximum numbers of tokens to generate, ignoring the number of tokens in the prompt.
-            temperature: The value used to module the next token probabilities.
-            num_return_sequences: The number of independently computed returned
-                sequences for each element in the batch.
-
-        Returns:
-            list[list[dict[str, str]]]: list of chat contexts with the generated responses.
-        """
-        results = self.text_generator(
-            messages,
-            do_sample=do_sample,
-            max_length=max_length,
-            max_new_tokens=max_new_tokens,
             temperature=temperature,
             num_return_sequences=num_return_sequences,
             clean_up_tokenization_spaces=True,
             truncation=max_length is not None,
             do_sample=do_sample,
+            max_new_tokens=max_new_tokens,
         )
         return [
             self.tokenizer.decode(output, skip_special_tokens=True)
