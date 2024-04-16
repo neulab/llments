@@ -10,15 +10,15 @@ class HuggingFaceLM(LanguageModel):
     """A language model that uses the HuggingFace library."""
 
     def __init__(
-        self, model: str, device: str | None = None, cache_dir: str = "cache_dir"
+        self, model: str, device: str | None = None, cache_dir: str | None = None
     ):
         """Initialize a HuggingFaceLM.
 
         Args:
             model: The name of the model.
             device: The device to run the model on.
-            cache_dir: Path to a directory in which a downloaded pretrained model image processor should be cached
-                    if the standard cache should not be used.
+            cache_dir: Path to a directory in which a downloaded pretrained model configuration should be cached 
+                        if the standard cache should not be used.
         """
         try:
             from transformers import AutoTokenizer, AutoModelForCausalLM
