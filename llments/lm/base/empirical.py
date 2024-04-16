@@ -1,9 +1,11 @@
 """A module for empirical language models."""
 
-from llments.lm.lm import LanguageModel
-import random
 import json
+import random
+
 import pandas as pd
+
+from llments.lm.lm import LanguageModel
 
 
 class EmpiricalDistribution(LanguageModel):
@@ -26,6 +28,7 @@ class EmpiricalDistribution(LanguageModel):
         condition: str | None,
         do_sample: bool = False,
         max_length: int | None = None,
+        max_new_tokens: int | None = None,
         temperature: float = 1.0,
         num_return_sequences: int = 1,
     ) -> list[str]:
@@ -36,6 +39,10 @@ class EmpiricalDistribution(LanguageModel):
             filtered_df = self.data[self.data["text"].str.startswith(condition)]
         if not do_sample:
             raise NotImplementedError("Greedy decoding is not implemented yet.")
+        if max_new_tokens is not None:
+            if max_length is not None:
+                raise ValueError("Specify only one: max_length or max_new_tokens.")
+            max_length = len(condition or "") + max_new_tokens
         if max_length is not None:
             filtered_df = filtered_df[
                 filtered_df["text"].str.split().len() <= max_length
@@ -53,6 +60,44 @@ class EmpiricalDistribution(LanguageModel):
             filtered_df["text"], weights=filtered_df["probs"], k=num_return_sequences
         )[0]
         return rets
+
+    def chat_generate(
+        self,
+        messages: list[dict[str, str]],
+        do_sample: bool = False,
+        max_length: int | None = None,
+        max_new_tokens: int | None = None,
+        temperature: float = 1.0,
+        num_return_sequences: int = 1,
+    ) -> list[list[dict[str, str]]]:
+        """Generate an output given a chat context.
+
+        Args:
+            messages: A list of dictionaries, each representing a message in the chat context. Each dictionary should contain the following keys:
+            - "role": The role of the entity sending the message. This can be "system", "user", etc.
+            - "content": The actual content of the message. Example:
+            [
+                {
+                    "role": "system",
+                    "content": "You are a friendly chatbot",
+                },
+                {
+                    "role": "user",
+                    "content": "How many helicopters can a human eat in one sitting?"
+                },
+            ]
+            do_sample: Whether to use sampling or greedy decoding.
+            max_length: The maximum length of the output sequence,
+                (defaults to model max).
+            max_new_tokens: The maximum numbers of tokens to generate, ignoring the number of tokens in the prompt.
+            temperature: The value used to module the next token probabilities.
+            num_return_sequences: The number of independently computed returned
+                sequences for each element in the batch.
+
+        Returns:
+            list[list[dict[str, str]]]: list of chat contexts with the generated responses.
+        """
+        raise NotImplementedError("This is not implemented yet.")
 
     def calculate_probability(self, condition: str | None, output: str) -> float:
         """Calculate the probability of an output given the language model.

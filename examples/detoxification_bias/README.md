@@ -24,7 +24,7 @@ the following directories to store the data:
 ```bash
 mkdir -p data/raw/civilcomments data/raw/translation_pairs
 mkdir -p data/train/ft
-mkdir -p data/eval/translation_pairs/scored/
+mkdir -p data/eval/translation_pairs/scored/ 
 mkdir -p data/eval/translation_pairs/filtered/
 ```
 
@@ -64,14 +64,14 @@ and the original paper and datasets.
 @inproceedings{Xu2021Detoxifying,
     Title = {Detoxifying Language Models Risks Marginalizing Minority Voices},
     Author = {
-        Albert Xu and
-        Eshaan Pathak and
-        Eric Wallace and
-        Suchin Gururangan and
-        Maarten Sap and
+        Albert Xu and 
+        Eshaan Pathak and 
+        Eric Wallace and 
+        Suchin Gururangan and 
+        Maarten Sap and 
         Dan Klein},
     Booktitle = {
-        North American Chapter of the Association
+        North American Chapter of the Association 
         for Computational Linguistics}
     year={2021}
 }
@@ -79,15 +79,15 @@ and the original paper and datasets.
 
 ```bibtex
 @inproceedings{groenwold-etal-2020-investigating,
-    title = "Investigating {A}frican-{A}merican
+    title = "Investigating {A}frican-{A}merican 
         {V}ernacular {E}nglish in Transformer-Based Text Generation",
     author = "
-        Groenwold, Sophie and
-        Ou, Lily and
-        Parekh, Aesha and
-        Honnavalli, Samhita and
-        Levy, Sharon and
-        Mirza, Diba and
+        Groenwold, Sophie and 
+        Ou, Lily and 
+        Parekh, Aesha and 
+        Honnavalli, Samhita and 
+        Levy, Sharon and 
+        Mirza, Diba and 
         Wang, William Yang",
     booktitle = "Proceedings of EMNLP",
     url = "https://www.aclweb.org/anthology/2020.emnlp-main.473",
