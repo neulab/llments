@@ -1,15 +1,17 @@
 """Base class for API-Based Language Models."""
 
 import os
-from litellm import completion
+from litellm import acompletion
 
 class APIBasedLM:
     """Base class for API-Based Language Models.
-    
-    This class represents an API-based language model that generates responses
-    using the API key of the model and the model name. The user sets the API Key 
-    as an environment variable, and the model name is passed while creating 
-    an instance of the class.
+
+    Represents a language model that interacts with an API for generating responses.
+
+    Usage:
+    - Instantiate this class with the model name.
+    - Set the API key of the language model as an environment 
+      variable for secure access.
 
     Attributes:
         model_name (str): The name of the language model.
@@ -23,11 +25,14 @@ class APIBasedLM:
         """
         self.model_name = model_name
     
-    def generate_response(self, prompt: str) -> str:
+    async def generate_response(self, prompt: str) -> str:
         """Generate a response based on the given prompt.
 
         This method sends a prompt to the language model API and retrieves
         the generated response.
+
+        To handle potential rate limitations, this method uses the asynchronous
+        version of the completion function, which allows for concurrent function calls.
 
         Args:
             prompt (str): The prompt for generating a response.
@@ -35,7 +40,7 @@ class APIBasedLM:
         Returns:
             str: The generated response from the language model.
         """
-        response = completion(
+        response = await acompletion(
             model=self.model_name,
             messages=[{"content": prompt, "role": "user"}]
         )
