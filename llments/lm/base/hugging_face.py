@@ -29,6 +29,10 @@ class HuggingFaceLM(LanguageModel):
         self.tokenizer = AutoTokenizer.from_pretrained(
             model, trust_remote_code=True
         )  # use the same tokenizer as the model
+        
+        if not self.tokenizer.pad_token:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+        
         self.model = AutoModelForCausalLM.from_pretrained(
             model, do_sample=True, use_cache=True, cache_dir=cache_dir
         )
@@ -176,8 +180,7 @@ class HuggingFaceLMFitter:
         base: HuggingFaceLM,
         target: LanguageModel,
         batch_size: int = 8,  # batch size per device
-        training_steps: int = 200,  # ie. max_steps
-        training_epochs: float = 3.0,
+        training_steps: int = 200,
         output_dir: str = "./training_results",  # ie. checkpoint_dir
         logging_dir: str = "./logs",
         do_train: bool = False,
@@ -190,6 +193,7 @@ class HuggingFaceLMFitter:
         prediction_loss_only: bool = False,
         optim: str = "adamw_torch",
         logging_steps: int = 500,
+
     ) -> LanguageModel:
         """Fit the language model to a target language model's distribution.
 
@@ -222,8 +226,7 @@ class HuggingFaceLMFitter:
                 Trainer,
                 DataCollatorForLanguageModeling,
             )
-            import torch
-            from torch.utils.data import Dataset
+            from datasets import Dataset
             from transformers import Trainer, TrainingArguments
         except ImportError:
             raise ImportError(
@@ -232,67 +235,30 @@ class HuggingFaceLMFitter:
             )
 
         # Generate data and prepare training dataset
-        inputs, labels = cls._prepare_training_data(
+        inputs = cls._prepare_training_data(
             base, target, batch_size, training_steps
         )
 
-        class TrainingDataset(Dataset):  # type: ignore
-            def __init__(
-                self, encodings: dict[str, torch.Tensor], labels: torch.Tensor
-            ):
-                self.encodings = encodings
-                self.labels = labels
-
-            def __getitem__(self, idx: int) -> dict[str, torch.Tensor]:
-                item = {
-                    key: torch.tensor(val[idx]) for key, val in self.encodings.items()
-                }
-                item["labels"] = torch.tensor(self.labels[idx])
-                return item
-
-            def __len__(self) -> int:
-                return len(self.labels)
-
-        dataset = TrainingDataset(inputs["input_ids"], labels)
-
-        # train_epochs = training_steps / (len(dataset) / batch_size)
-
-        if training_epochs != 3.0:  # train using (training_steps, batch_size)
-            training_args = TrainingArguments(
-                output_dir=output_dir,
-                do_train=do_train,
-                do_eval=do_eval,
-                per_device_train_batch_size=batch_size,
-                per_device_eval_batch_size=batch_size,
-                learning_rate=learning_rate,
-                warmup_steps=warmup_steps,
-                max_grad_norm=max_grad_norm,
-                max_steps=training_steps,  # use steps here
-                optim=optim,
-                evaluation_strategy=evalution_strategy,
-                eval_steps=eval_steps,
-                prediction_loss_only=prediction_loss_only,
-                logging_dir=logging_dir,
-                logging_steps=logging_steps,
-            )
-        else:  # train using (epochs, batch_size)
-            training_args = TrainingArguments(
-                output_dir=output_dir,
-                do_train=do_train,
-                do_eval=do_eval,
-                per_device_train_batch_size=batch_size,
-                per_device_eval_batch_size=batch_size,
-                learning_rate=learning_rate,
-                warmup_steps=warmup_steps,
-                max_grad_norm=max_grad_norm,
-                num_train_epochs=training_epochs,  # use epochs here
-                optim=optim,
-                evaluation_strategy=evalution_strategy,
-                eval_steps=eval_steps,
-                prediction_loss_only=prediction_loss_only,
-                logging_dir=logging_dir,
-                logging_steps=logging_steps,
-            )
+        # convert tokenized text into a Dataset object
+        dataset = Dataset.from_dict(inputs)
+        
+        training_args = TrainingArguments(
+            output_dir=output_dir,
+            do_train=do_train,
+            do_eval=do_eval,
+            per_device_train_batch_size=batch_size,
+            per_device_eval_batch_size=batch_size,
+            learning_rate=learning_rate,
+            warmup_steps=warmup_steps,
+            max_grad_norm=max_grad_norm,
+            max_steps=training_steps,  # use steps here
+            optim=optim,
+            evaluation_strategy=evalution_strategy,
+            eval_steps=eval_steps,
+            prediction_loss_only=prediction_loss_only,
+            logging_dir=logging_dir,
+            logging_steps=logging_steps,
+        )
 
         trainer = Trainer(
             model=base.model,
@@ -314,7 +280,7 @@ class HuggingFaceLMFitter:
         target: LanguageModel,
         batch_size: int,
         training_steps: int,
-    ) -> tuple[dict[str, Any], Any]:
+    ) -> dict[str, Any]:
         """Generate data from the target language model, using generate() function.
 
         Helper function of fit().
@@ -330,12 +296,6 @@ class HuggingFaceLMFitter:
                 tokenizer.
             labels: "Up shift" each token to create the labels.
         """
-        try:
-            import torch
-        except ImportError:
-            raise ImportError(
-                "You need to install/import 'torch' package to use this function."
-            )
 
         samples = target.generate(
             condition=None,
@@ -349,15 +309,7 @@ class HuggingFaceLMFitter:
             samples, padding=True, truncation=True, return_tensors="pt"
         )  # return pytorch tensor
 
-        labels = inputs.input_ids[:, 1:].clone()
-        labels = torch.nn.functional.pad(
-            labels, (0, 1), value=-100
-        )  # Pad with -100 on the right
-
-        # Adjust input_ids by removing the last token to match labels' size
-        inputs.input_ids = inputs.input_ids[:, :-1]
-
-        return inputs, labels
+        return inputs
 
 
 def load_from_spec(spec_file: str) -> HuggingFaceLM:

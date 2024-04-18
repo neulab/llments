@@ -57,8 +57,8 @@ class EmpiricalDistribution(LanguageModel):
         # Normalize the probabilities
         filtered_df["prob"] = filtered_df["prob"] / filtered_df["prob"].sum()
         rets: list[str] = random.choices(
-            filtered_df["text"], weights=filtered_df["probs"], k=num_return_sequences
-        )[0]
+            filtered_df["text"], weights=filtered_df["prob"], k=num_return_sequences
+        )
         return rets
 
     def chat_generate(
