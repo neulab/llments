@@ -10,14 +10,19 @@ class HuggingFaceLM(LanguageModel):
     """A language model that uses the HuggingFace library."""
 
     def __init__(
-        self, model: str, device: str | None = None, cache_dir: str | None = None
+        self,
+        model: str,
+        tokenizer_path: str | None = None,
+        device: str | None = None,
+        cache_dir: str | None = None,
     ):
         """Initialize a HuggingFaceLM.
 
         Args:
             model: The name of the model.
+            tokenizer_path: path to find tokenizer, used with creating the model from a checkpoint.
             device: The device to run the model on.
-            cache_dir: Path to a directory in which a downloaded pretrained model configuration should be cached 
+            cache_dir: Path to a directory in which a downloaded pretrained model configuration should be cached
                         if the standard cache should not be used.
         """
         try:
@@ -26,14 +31,29 @@ class HuggingFaceLM(LanguageModel):
             raise ImportError(
                 "You need to install the `transformers` package to use this class."
             )
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            model, trust_remote_code=True
-        )  # use the same tokenizer as the model
-        self.model = AutoModelForCausalLM.from_pretrained(
-            model, do_sample=True, use_cache=True, cache_dir=cache_dir
-        )
-        self.device = device or "cpu"
-        self.model.to(self.device)
+        if not ".ckpt" in model:  # use the same tokenizer as the model
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                model, trust_remote_code=True
+            )
+            self.model = AutoModelForCausalLM.from_pretrained(
+                model, do_sample=True, use_cache=True, cache_dir=cache_dir
+            )
+            self.device = device or "cpu"
+            self.model.to(self.device)
+        elif ".ckpt" in model and tokenizer_path is not None:  # load from checkpoint
+            tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
+            if not tokenizer.pad_token:
+                tokenizer.pad_token = tokenizer.eos_token
+            self.tokenizer = tokenizer
+            self.model = AutoModelForCausalLM.from_pretrained(
+                model, from_tf=bool(".ckpt" in model)
+            )
+        else:
+            raise ValueError(
+                "You must create model from one of the following ways: \n"
+                + "1. Input HF model name.\n"
+                + "2. Load model from a checkpoint file, include tokenizer path as well."
+            )
 
     def generate(
         self,
@@ -378,3 +398,16 @@ def load_from_spec(spec_file: str) -> HuggingFaceLM:
     device = spec.get("device", None)
 
     return HuggingFaceLM(model=model_name, device=device)
+
+
+def load_from_checkpoint(model_path: str, tokenizer_path: str) -> HuggingFaceLM:
+    """Load a language model from a checkpoint file.
+
+    Args:
+        model_path: model checkpoint path, has the suffix ".ckpt"
+        tokenizer_path: the path to find tokenizer.
+
+    Returns:
+        A HuggingFaceLM instance.
+    """
+    return HuggingFaceLM(model=model_path, tokenizer_path=tokenizer_path)
