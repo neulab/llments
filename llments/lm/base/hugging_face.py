@@ -17,7 +17,7 @@ class HuggingFaceLM(LanguageModel):
         Args:
             model: The name of the model.
             device: The device to run the model on.
-            cache_dir: Path to a directory in which a downloaded pretrained model configuration should be cached 
+            cache_dir: Path to a directory in which a downloaded pretrained model configuration should be cached
                         if the standard cache should not be used.
         """
         try:
@@ -29,10 +29,10 @@ class HuggingFaceLM(LanguageModel):
         self.tokenizer = AutoTokenizer.from_pretrained(
             model, trust_remote_code=True
         )  # use the same tokenizer as the model
-        
+
         if not self.tokenizer.pad_token:
             self.tokenizer.pad_token = self.tokenizer.eos_token
-        
+
         self.model = AutoModelForCausalLM.from_pretrained(
             model, do_sample=True, use_cache=True, cache_dir=cache_dir
         )
@@ -193,7 +193,6 @@ class HuggingFaceLMFitter:
         prediction_loss_only: bool = False,
         optim: str = "adamw_torch",
         logging_steps: int = 500,
-
     ) -> LanguageModel:
         """Fit the language model to a target language model's distribution.
 
@@ -235,13 +234,11 @@ class HuggingFaceLMFitter:
             )
 
         # Generate data and prepare training dataset
-        inputs = cls._prepare_training_data(
-            base, target, batch_size, training_steps
-        )
+        inputs = cls._prepare_training_data(base, target, batch_size, training_steps)
 
         # convert tokenized text into a Dataset object
         dataset = Dataset.from_dict(inputs)
-        
+
         training_args = TrainingArguments(
             output_dir=output_dir,
             do_train=do_train,
@@ -280,7 +277,7 @@ class HuggingFaceLMFitter:
         target: LanguageModel,
         batch_size: int,
         training_steps: int,
-    ) -> dict[str, Any]:
+    ) -> Any:
         """Generate data from the target language model, using generate() function.
 
         Helper function of fit().
@@ -296,7 +293,6 @@ class HuggingFaceLMFitter:
                 tokenizer.
             labels: "Up shift" each token to create the labels.
         """
-
         samples = target.generate(
             condition=None,
             do_sample=True,
