@@ -52,7 +52,7 @@ class HuggingFaceLM(LanguageModel):
             raise ValueError(
                 "You must create model from one of the following ways: \n"
                 + "1. Input HF model name.\n"
-                + "2. Load model from a checkpoint file, include toknizer path as well."
+                + "2. Load model from a checkpoint file, include tokenizer path as well."
             )
 
     def generate(
