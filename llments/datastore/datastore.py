@@ -1,7 +1,8 @@
 """Module for a datastore containing data for retrieval."""
 import abc
-from typing import Any
-
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    pyserini.search.faiss import DenseSearchResult
 
 class Datastore:
     """A datastore containing data for retrieval."""
@@ -13,7 +14,7 @@ class Datastore:
         self,
         query: str | None,
         max_results: int,
-    ) -> list:
+    ) -> list[DenseSearchResult]:
         """Retrieve documents based on the specified parameters.
 
         Args:
@@ -21,6 +22,6 @@ class Datastore:
             max_results (int): Maximum number of results to retrieve.
 
         Returns:
-            Any: Retrieved result object.
+            list[DenseSearchResult]: Retrieved result objects.
         """
         pass

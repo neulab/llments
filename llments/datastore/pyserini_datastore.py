@@ -3,6 +3,10 @@
 import os
 from llments.datastore.datastore import Datastore
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    pyserini.search.faiss import DenseSearchResult
+
 class PyseriniDatastore(Datastore):
     """A PyseriniDatastore containing data for retrieval."""
 
@@ -261,7 +265,7 @@ class PyseriniDatastore(Datastore):
         self,
         query: str | None,
         max_results: int,
-    ) -> list:
+    ) -> list[DenseSearchResult]:
         """Retrieve documents based on the specified searcher name.
 
         Args:
@@ -269,7 +273,7 @@ class PyseriniDatastore(Datastore):
             max_results (int): Maximum number of results to retrieve.
 
         Returns:
-            Any: Retrieved result objects.
+            list[DenseSearchResult]: Retrieved result objects.
         """
         try:
             from pyserini.search import FaissSearcher
