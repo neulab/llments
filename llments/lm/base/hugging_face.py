@@ -15,7 +15,6 @@ class HuggingFaceLM(LanguageModel):
         tokenizer_path: str | None = None,
         device: str | None = None,
         cache_dir: str | None = None,
-        token: str | None = None,
     ):
         """Initialize a HuggingFaceLM.
 
@@ -25,7 +24,6 @@ class HuggingFaceLM(LanguageModel):
             device: The device to run the model on.
             cache_dir: Path to a directory in which a downloaded pretrained model configuration should be cached
                         if the standard cache should not be used.
-            token: Auth token for certain models from HF
         """
         try:
             from transformers import AutoTokenizer, AutoModelForCausalLM
