@@ -236,6 +236,11 @@ class RAGEvaluator(Evaluator):
             float: The evaluation score, usually between 0 and 1 inclusive.
         """
         # Convert textual numbers in the hypothesis and context to numeric form
+        if context is None:
+            raise ValueError(
+                "Please enter the reference answer as an argument."
+            )
+        
         guess_answer = self.convert_textual_numbers_to_numeric(hyp)
         gold_candidate_answers = [self.convert_textual_numbers_to_numeric(ans) for ans in context.data]
 
