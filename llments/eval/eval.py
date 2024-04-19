@@ -3,13 +3,14 @@
 import abc
 import dataclasses
 import tqdm
+from typing import Any
 
 
 @dataclasses.dataclass
 class EvalContext:
     """A context for evaluating a hypothesized string."""
     ...
-    data: any
+    data: Any
 
 
 class Evaluator:
