@@ -1,6 +1,7 @@
 """Module for Evaluating RAG."""
 
 from llments.eval.eval import Evaluator, EvalContext
+from typing import Callable
 
 class RAGEvalContext(EvalContext):
     """A context for evaluating a hypothesized string."""
@@ -54,7 +55,7 @@ class RAGEvaluator(Evaluator):
         return word.lower() in number_parts
     
     @staticmethod
-    def _metric_max_over_ground_truths(metric_fn, prediction: str, ground_truths: list[str]) -> float:
+    def _metric_max_over_ground_truths(metric_fn: Callable[[str, str], float], prediction: str, ground_truths: list[str]) -> float:
         """Compute the maximum score over multiple ground truths.
 
         Args:
@@ -184,7 +185,7 @@ class RAGEvaluator(Evaluator):
             return 0.0
         return float(scores["rouge-l"]["f"])
 
-    def evaluate(self, hyp: str, context: EvalContext, metric: str) -> float:
+    def evaluate(self, hyp: str, context: RAGEvalContext, metric: str) -> float:
         """Returns a sentiment score (usually between 0-1) conditioned on data.
 
         Args:
