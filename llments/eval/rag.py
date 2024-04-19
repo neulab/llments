@@ -6,7 +6,10 @@ from typing import Callable
 class RAGEvalContext(EvalContext):
     """A context for evaluating a hypothesized string."""
     
-    def __init__(self, data: list[str]):
+    def __init__(
+        self, 
+        data: list[str]
+    ):
         """Initialize the EvalContext.
 
         Args:
@@ -17,8 +20,21 @@ class RAGEvalContext(EvalContext):
 class RAGEvaluator(Evaluator):
     """An evaluator to evaluate the sentiment of an output."""
 
+    def __init__(
+        self, 
+        metric: str
+    ):
+        """Initialize the RAGEvaluator.
+
+        Args:
+            metric (str): The metric to evaluate ("accuracy", "exact_match", "f1", "rougel").
+        """
+        self.metric = metric
+
     @staticmethod
-    def normalize_answer(s: str) -> str:
+    def normalize_answer(
+        s: str
+    ) -> str:
         """Lower text and remove punctuation, articles, and extra whitespace."""
         import re
         import string
@@ -39,7 +55,9 @@ class RAGEvaluator(Evaluator):
         return white_space_fix(remove_articles(remove_punc(lower(s))))
     
     @staticmethod
-    def is_potential_number(word: str) -> bool:
+    def is_potential_number(
+        word: str
+    ) -> bool:
         """Check if a word is a potential part of a number in textual form.
 
         Args:
@@ -55,7 +73,11 @@ class RAGEvaluator(Evaluator):
         return word.lower() in number_parts
     
     @staticmethod
-    def _metric_max_over_ground_truths(metric_fn: Callable[[str, str], float], prediction: str, ground_truths: list[str]) -> float:
+    def _metric_max_over_ground_truths(
+        metric_fn: Callable[[str, str], float], 
+        prediction: str, 
+        ground_truths: list[str]
+    ) -> float:
         """Compute the maximum score over multiple ground truths.
 
         Args:
@@ -75,7 +97,9 @@ class RAGEvaluator(Evaluator):
         return float(max(scores_for_ground_truths))
     
     @staticmethod
-    def convert_textual_numbers_to_numeric(sentence: str) -> str:
+    def convert_textual_numbers_to_numeric(
+        sentence: str
+    ) -> str:
         """Convert textual numbers within a sentence to numeric form.
 
         Args:
@@ -123,7 +147,11 @@ class RAGEvaluator(Evaluator):
         return ' '.join(converted_words)
 
     # EM score definition
-    def _exact_match_score(self, prediction: str, ground_truth: str) -> bool:
+    def _exact_match_score(
+        self, 
+        prediction: str, 
+        ground_truth: str
+    ) -> bool:
         """Compute exact match score.
 
         Args:
@@ -136,7 +164,11 @@ class RAGEvaluator(Evaluator):
         return RAGEvaluator.normalize_answer(prediction) == RAGEvaluator.normalize_answer(ground_truth)
     
     # F1 score definition
-    def _f1_score(self, prediction: str, ground_truth: str) -> float:
+    def _f1_score(
+        self, 
+        prediction: str, 
+        ground_truth: str
+    ) -> float:
         """Compute F1 score.
 
         Args:
@@ -161,7 +193,10 @@ class RAGEvaluator(Evaluator):
 
     # ROUGEL score definition
     @staticmethod
-    def _rougel_score(prediction: str, ground_truth: str) -> float:
+    def _rougel_score(
+        prediction: str, 
+        ground_truth: str
+    ) -> float:
         """Compute ROUGEL score.
 
         Args:
@@ -185,7 +220,11 @@ class RAGEvaluator(Evaluator):
             return 0.0
         return float(scores["rouge-l"]["f"])
 
-    def evaluate(self, hyp: str, context: RAGEvalContext, metric: str) -> float:
+    def evaluate(
+        self, 
+        hyp: str, 
+        context: RAGEvalContext, 
+    ) -> float:
         """Returns a sentiment score (usually between 0-1) conditioned on data.
 
         Args:
@@ -201,37 +240,39 @@ class RAGEvaluator(Evaluator):
         gold_candidate_answers = [self.convert_textual_numbers_to_numeric(ans) for ans in context.data]
 
         # Evaluate based on the specified metric
-        if metric == "accuracy":
+        if self.metric == "accuracy":
             local_accuracy = 0
             if guess_answer in gold_candidate_answers:
                 local_accuracy = 1
             return local_accuracy
 
-        if metric == "exact_match":
+        elif self.metric == "exact_match":
             local_em = self._metric_max_over_ground_truths(
                 self._exact_match_score, guess_answer, gold_candidate_answers
             )
             return local_em
 
-        if metric == "f1":
+        elif self.metric == "f1":
             local_f1 = self._metric_max_over_ground_truths(
                 self._f1_score, guess_answer, gold_candidate_answers
             )
             return local_f1
 
-        if metric == "rougel":
+        elif self.metric == "rougel":
             local_rougel = self._metric_max_over_ground_truths(
                 self._rougel_score, guess_answer, gold_candidate_answers
             )
             return local_rougel
         
-        return 0.0
+        else:
+            raise ValueError(
+                "Please enter a valid metric value."
+            )
         
     def evaluate_batch(
         self,
         hyps: list[str],
-        contexts: list[EvalContext],
-        metric: str,
+        contexts: list[RAGEvalContext],
         minibatch_size: int | None = None,
         show_progress: bool = False,
     ) -> list[float]:
@@ -243,7 +284,6 @@ class RAGEvaluator(Evaluator):
             minibatch_size: The size of the minibatch to use,
                 None guesses a good size automatically.
             show_progress: Whether to show a progress bar.
-            metric (str): The metric to evaluate ("accuracy", "exact_match", "f1", "rougel").
 
         Returns:
             A list of evaluation scores, usually between 0 and 1 inclusive.
@@ -256,6 +296,6 @@ class RAGEvaluator(Evaluator):
                 raise ValueError(
                     "The number of contexts must match the number of hypotheses."
                 )
-            return [self.evaluate(hyp, context, metric) for hyp, context in zip(hyps, contexts)]
+            return [self.evaluate(hyp, context) for hyp, context in zip(hyps, contexts)]
         else:
             return [self.evaluate(hyp) for hyp in hyps]
