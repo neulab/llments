@@ -13,12 +13,14 @@ class HuggingFaceLM(LanguageModel):
         self,
         model: str,
         device: str | None = None,
+        token: str | None = None,
     ):
         """Initialize a HuggingFaceLM.
 
         Args:
             model: The name of the model.
             device: The device to run the model on.
+            token: Auth token for certain models from HF
         """
         try:
             from transformers import TextGenerationPipeline, pipeline
@@ -27,7 +29,7 @@ class HuggingFaceLM(LanguageModel):
                 "You need to install the `transformers` package to use this class."
             )
         self.text_generator: TextGenerationPipeline = pipeline(
-            "text-generation", model=model, device=device
+            "text-generation", model=model, device=device, token=token
         )
 
     def generate(

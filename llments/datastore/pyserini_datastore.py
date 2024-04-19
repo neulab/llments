@@ -26,6 +26,8 @@ class PyseriniDatastore(Datastore):
         l2_norm: bool = False,
         use_openai: bool = False,
         rate_limit: int = 3500,
+        shard_id: int = 0,
+        shard_num: int = 1,
     ):
         """Initializes a PyseriniDatastore object.
 
@@ -46,6 +48,8 @@ class PyseriniDatastore(Datastore):
             l2_norm (bool, optional): Whether to apply L2 normalization.
             use_openai (bool, optional): Whether to use OpenAI's encoder.
             rate_limit (int, optional): Rate limit for OpenAI API requests.
+            shard_id (int, optional): id of shards.
+            shard_num (int, optional): number of shards.
         """
         self.index_path = index_path
         self.document_path = document_path
@@ -71,6 +75,8 @@ class PyseriniDatastore(Datastore):
                 device=device,
                 use_openai=use_openai,
                 rate_limit=rate_limit,
+                shard_id=shard_id,
+                shard_num=shard_num,
             )
         elif not os.path.exists(index_path):
             raise FileNotFoundError(
@@ -93,6 +99,8 @@ class PyseriniDatastore(Datastore):
         l2_norm: bool = False,
         use_openai: bool = False,
         rate_limit: int = 3500,
+        shard_id: int = 0,
+        shard_num: int = 1,
     ) -> None:
         """Encodes documents using the specified parameters.
 
@@ -228,8 +236,8 @@ class PyseriniDatastore(Datastore):
         print("Building the index ...")
 
         with embedding_writer:
-            for batch_info in collection_iterator(batch_size):
-                texts = batch_info["text"]
+            for batch_info in collection_iterator(batch_size, shard_id, shard_num):
+                texts = batch_info[fields[0]]
                 titles = batch_info["title"] if "title" in fields else None
                 expands = batch_info["expand"] if "expand" in fields else None
                 fp16 = False
