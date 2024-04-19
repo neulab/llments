@@ -9,9 +9,16 @@ class QAEvalContext(EvalContext):
     """A context for evaluating a hypothesized string.
     
     Attributes:
-        data list[str]: It is a list of strings having the reference answers.
+        gold_answers (list[str]): It is a list of strings having the reference answers.
+        For example:
+            "query": "who said some are born great in twelfth night?"
+            "gold_answers": [
+                "letter that Maria wrote",
+                "Malvolio"
+            ]
+
     """
-    data: list[str]
+    gold_answers: list[str]
 
 class QAEvaluator(Evaluator):
     """An evaluator to evaluate the output against the ground-truth."""
@@ -243,7 +250,7 @@ class QAEvaluator(Evaluator):
             )
         
         guess_answer = self.convert_textual_numbers_to_numeric(hyp)
-        gold_candidate_answers = [self.convert_textual_numbers_to_numeric(ans) for ans in context.data]
+        gold_candidate_answers = [self.convert_textual_numbers_to_numeric(ans) for ans in context.gold_answers]
 
         # Evaluate based on the specified metric
         if self.metric == "accuracy":
