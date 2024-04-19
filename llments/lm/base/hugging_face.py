@@ -1,7 +1,7 @@
 """Module for HuggingFace language models."""
 
 import json
-from typing import Any
+from typing import Any, Dict
 
 from llments.lm.lm import LanguageModel
 
@@ -277,7 +277,7 @@ class HuggingFaceLMFitter:
         target: LanguageModel,
         batch_size: int,
         training_steps: int,
-    ) -> Any:
+    ) -> Dict[str, Any]:
         """Generate data from the target language model, using generate() function.
 
         Helper function of fit().
