@@ -1,22 +1,26 @@
-"""Module for Evaluating RAG."""
+"""Module for Evaluating QA. Acknowledgements: https://github.com/neulab/ragged"""
 
 from llments.eval.eval import Evaluator, EvalContext
 from typing import Callable
 import dataclasses
 
 @dataclasses.dataclass
-class RAGEvalContext(EvalContext):
-    """A context for evaluating a hypothesized string."""
+class QAEvalContext(EvalContext):
+    """A context for evaluating a hypothesized string.
+    
+    Attributes:
+        data list[str]: It is a list of strings having the reference answers.
+    """
     data: list[str]
 
-class RAGEvaluator(Evaluator):
-    """An evaluator to evaluate the sentiment of an output."""
+class QAEvaluator(Evaluator):
+    """An evaluator to evaluate the output against the ground-truth."""
 
     def __init__(
         self, 
         metric: str
     ):
-        """Initialize the RAGEvaluator.
+        """Initialize the QAEvaluator.
 
         Args:
             metric (str): The metric to evaluate ("accuracy", "exact_match", "f1", "rougel").
@@ -104,14 +108,14 @@ class RAGEvaluator(Evaluator):
             from word2number import w2n
         except ImportError:
             raise ImportError(
-                "RAGEvaluator requires the `word2number` library."
+                "QAEvaluator requires the `word2number` library."
             )
         words = sentence.split()
         converted_words = []
         current_number_phrase = []
 
         for word in words:
-            if RAGEvaluator.is_potential_number(word):
+            if QAEvaluator.is_potential_number(word):
                 current_number_phrase.append(word)
             else:
                 if current_number_phrase:
@@ -153,7 +157,7 @@ class RAGEvaluator(Evaluator):
         Returns:
             bool: True if prediction exactly matches the ground truth, False otherwise.
         """
-        return RAGEvaluator.normalize_answer(prediction) == RAGEvaluator.normalize_answer(ground_truth)
+        return QAEvaluator.normalize_answer(prediction) == QAEvaluator.normalize_answer(ground_truth)
     
     # F1 score definition
     def _f1_score(
@@ -172,8 +176,8 @@ class RAGEvaluator(Evaluator):
         """
         from collections import Counter
 
-        prediction_tokens = RAGEvaluator.normalize_answer(prediction).split()
-        ground_truth_tokens = RAGEvaluator.normalize_answer(ground_truth).split()
+        prediction_tokens = QAEvaluator.normalize_answer(prediction).split()
+        ground_truth_tokens = QAEvaluator.normalize_answer(ground_truth).split()
         common = Counter(prediction_tokens) & Counter(ground_truth_tokens)
         num_same = sum(common.values())
         if num_same == 0:
@@ -202,7 +206,7 @@ class RAGEvaluator(Evaluator):
             from rouge import Rouge
         except ImportError:
             raise ImportError(
-                "RAGEvaluator requires the `rouge` library."
+                "QAEvaluator requires the `rouge` library."
             )
         rouge = Rouge()
         # no normalization
@@ -231,6 +235,11 @@ class RAGEvaluator(Evaluator):
         if context is None:
             raise ValueError(
                 "Please enter the reference answer as an argument."
+            )
+        
+        if not isinstance(context, QAEvalContext):
+            raise ValueError(
+                "context is not RAGEvalContext"
             )
         
         guess_answer = self.convert_textual_numbers_to_numeric(hyp)

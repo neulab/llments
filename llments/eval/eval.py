@@ -10,7 +10,6 @@ from typing import Any
 class EvalContext:
     """A context for evaluating a hypothesized string."""
     ...
-    data: Any
 
 
 class Evaluator:

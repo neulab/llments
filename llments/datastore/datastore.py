@@ -13,7 +13,7 @@ class Datastore:
         self,
         query: str | None,
         max_results: int,
-    ) -> Any:
+    ) -> list:
         """Retrieve documents based on the specified parameters.
 
         Args:

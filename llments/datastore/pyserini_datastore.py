@@ -1,9 +1,7 @@
 """A module for PyseriniDatastore class."""
 
 import os
-from typing import Any
 from llments.datastore.datastore import Datastore
-
 
 class PyseriniDatastore(Datastore):
     """A PyseriniDatastore containing data for retrieval."""
@@ -263,7 +261,7 @@ class PyseriniDatastore(Datastore):
         self,
         query: str | None,
         max_results: int,
-    ) -> Any:
+    ) -> list:
         """Retrieve documents based on the specified searcher name.
 
         Args:
