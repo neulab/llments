@@ -2,20 +2,12 @@
 
 from llments.eval.eval import Evaluator, EvalContext
 from typing import Callable
+import dataclasses
 
+@dataclasses.dataclass
 class RAGEvalContext(EvalContext):
     """A context for evaluating a hypothesized string."""
-    
-    def __init__(
-        self, 
-        data: list[str]
-    ):
-        """Initialize the EvalContext.
-
-        Args:
-            data (list[str]): List of strings for evaluation context.
-        """
-        self.data = data
+    data: list[str]
 
 class RAGEvaluator(Evaluator):
     """An evaluator to evaluate the sentiment of an output."""

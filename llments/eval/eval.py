@@ -8,7 +8,6 @@ import tqdm
 @dataclasses.dataclass
 class EvalContext:
     """A context for evaluating a hypothesized string."""
-    data: list[str]
     ...
 
 
