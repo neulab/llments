@@ -119,6 +119,8 @@ class PyseriniDatastore(Datastore):
             l2_norm (bool, optional): Whether to apply L2 normalization.
             use_openai (bool, optional): Whether to use OpenAI's encoder.
             rate_limit (int, optional): Rate limit for OpenAI API requests.
+            shard_id (int, optional): id of shards.
+            shard_num (int, optional): number of shards.
         """
         if index_encoder is None or fields is None:
             raise ValueError(

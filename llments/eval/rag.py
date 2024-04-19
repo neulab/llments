@@ -1,3 +1,5 @@
+"""Module for Evaluating RAG."""
+
 from llments.eval.eval import Evaluator, EvalContext
 
 class RAGEvalContext(EvalContext):
