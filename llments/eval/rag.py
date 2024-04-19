@@ -2,9 +2,9 @@ from llments.eval.eval import Evaluator, EvalContext
 
 class RAGEvalContext(EvalContext):
     """A context for evaluating a hypothesized string."""
+    
     def __init__(self, data: list[str]):
-        """
-        Initialize the EvalContext.
+        """Initialize the EvalContext.
 
         Args:
             data (list[str]): List of strings for evaluation context.
@@ -37,8 +37,7 @@ class RAGEvaluator(Evaluator):
     
     @staticmethod
     def is_potential_number(word: str) -> bool:
-        """
-        Check if a word is a potential part of a number in textual form.
+        """Check if a word is a potential part of a number in textual form.
 
         Args:
             word (str): The word to check.
@@ -54,8 +53,7 @@ class RAGEvaluator(Evaluator):
     
     @staticmethod
     def _metric_max_over_ground_truths(metric_fn, prediction: str, ground_truths: list[str]) -> float:
-        """
-        Compute the maximum score over multiple ground truths.
+        """Compute the maximum score over multiple ground truths.
 
         Args:
             metric_fn: The metric function to apply.
@@ -75,8 +73,7 @@ class RAGEvaluator(Evaluator):
     
     @staticmethod
     def convert_textual_numbers_to_numeric(sentence: str) -> str:
-        """
-        Convert textual numbers within a sentence to numeric form.
+        """Convert textual numbers within a sentence to numeric form.
 
         Args:
             sentence (str): The input sentence.
@@ -124,8 +121,7 @@ class RAGEvaluator(Evaluator):
 
     # EM score definition
     def _exact_match_score(self, prediction: str, ground_truth: str) -> bool:
-        """
-        Compute exact match score.
+        """Compute exact match score.
 
         Args:
             prediction (str): The predicted answer.
@@ -138,8 +134,7 @@ class RAGEvaluator(Evaluator):
     
     # F1 score definition
     def _f1_score(self, prediction: str, ground_truth: str) -> float:
-        """
-        Compute F1 score.
+        """Compute F1 score.
 
         Args:
             prediction (str): The predicted answer.
@@ -164,8 +159,7 @@ class RAGEvaluator(Evaluator):
     # ROUGEL score definition
     @staticmethod
     def _rougel_score(prediction: str, ground_truth: str) -> float:
-        """
-        Compute ROUGEL score.
+        """Compute ROUGEL score.
 
         Args:
             prediction (str): The predicted answer.
@@ -189,8 +183,7 @@ class RAGEvaluator(Evaluator):
         return scores["rouge-l"]["f"]
 
     def evaluate(self, hyp: str, context: EvalContext, metric: str) -> float:
-        """
-        Returns a sentiment score (usually between 0-1) conditioned on data.
+        """Returns a sentiment score (usually between 0-1) conditioned on data.
 
         Args:
             hyp (str): The hypothesized string (e.g., a system output).
