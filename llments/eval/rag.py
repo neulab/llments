@@ -223,7 +223,7 @@ class RAGEvaluator(Evaluator):
     def evaluate(
         self, 
         hyp: str, 
-        context: RAGEvalContext | None = None, 
+        context: EvalContext | None = None, 
     ) -> float:
         """Returns a sentiment score (usually between 0-1) conditioned on data.
 
@@ -272,7 +272,7 @@ class RAGEvaluator(Evaluator):
     def evaluate_batch(
         self,
         hyps: list[str],
-        contexts: list[RAGEvalContext] | None = None,
+        contexts: list[EvalContext] | None = None,
         minibatch_size: int | None = None,
         show_progress: bool = False,
     ) -> list[float]:
