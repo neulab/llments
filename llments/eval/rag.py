@@ -71,7 +71,7 @@ class RAGEvaluator(Evaluator):
             score = metric_fn(prediction, ground_truth)
             scores_for_ground_truths.append(score)
 
-        return max(scores_for_ground_truths)
+        return float(max(scores_for_ground_truths))
     
     @staticmethod
     def convert_textual_numbers_to_numeric(sentence: str) -> str:
@@ -182,7 +182,7 @@ class RAGEvaluator(Evaluator):
             scores = rouge.get_scores(prediction, ground_truth, avg=True)
         except ValueError:  # "Hypothesis is empty."
             return 0.0
-        return scores["rouge-l"]["f"]
+        return float(scores["rouge-l"]["f"])
 
     def evaluate(self, hyp: str, context: EvalContext, metric: str) -> float:
         """Returns a sentiment score (usually between 0-1) conditioned on data.
@@ -223,6 +223,8 @@ class RAGEvaluator(Evaluator):
                 self._rougel_score, guess_answer, gold_candidate_answers
             )
             return local_rougel
+        
+        return 0.0
         
     def evaluate_batch(
         self,
