@@ -1,4 +1,4 @@
-"""Module for Evaluating QA. Acknowledgements: https://github.com/neulab/ragged"""
+"""Module for Evaluating QA. Acknowledgements: https://github.com/neulab/ragged."""
 
 from llments.eval.eval import Evaluator, EvalContext
 from typing import Callable
