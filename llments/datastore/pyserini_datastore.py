@@ -5,7 +5,7 @@ from llments.datastore.datastore import Datastore
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    pyserini.search.faiss import DenseSearchResult
+    from pyserini.search.faiss import DenseSearchResult
 
 class PyseriniDatastore(Datastore):
     """A PyseriniDatastore containing data for retrieval."""
