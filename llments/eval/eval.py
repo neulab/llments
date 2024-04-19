@@ -9,6 +9,7 @@ import tqdm
 class EvalContext:
     """A context for evaluating a hypothesized string."""
     ...
+    data: any
 
 
 class Evaluator:
