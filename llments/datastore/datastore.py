@@ -2,7 +2,7 @@
 import abc
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    pyserini.search.faiss import DenseSearchResult
+    from pyserini.search.faiss import DenseSearchResult
 
 class Datastore:
     """A datastore containing data for retrieval."""
