@@ -1,21 +1,24 @@
 """A module for PyseriniDatastore class."""
 
-import os
+from __future__ import annotations
+from typing import TYPE_CHECKING
 from llments.datastore.datastore import Datastore
+import os
 
-try:
-    from pyserini.search.faiss import DenseSearchResult
-except ImportError:
-    raise ImportError(
-        "You need to install the `pyserini` package to use this class."
-    )
+if TYPE_CHECKING:
+    try:
+        from pyserini.search.faiss import DenseSearchResult
+    except ImportError:
+        raise ImportError(
+            "You need to install the `pyserini` package to use this class."
+        )
 
-try:
-    from faiss import IndexPreTransform
-except ImportError:
-    raise ImportError(
-        "You need to install the `faiss` package to use this class."
-    )
+    try:
+        from faiss import IndexPreTransform
+    except ImportError:
+        raise ImportError(
+            "You need to install the `faiss` package to use this class."
+        )
 
 class PyseriniDatastore(Datastore):
     """A PyseriniDatastore containing data for retrieval."""
@@ -292,7 +295,7 @@ class PyseriniDatastore(Datastore):
             list[DenseSearchResult]: Retrieved result objects.
         """
         try:
-            from pyserini.search.faiss import AutoQueryEncoder
+            from pyserini.search.faiss import AutoQueryEncoder, DenseSearchResult
         except ImportError:
             raise ImportError(
                 "You need to install the `pyserini` package to use this class."

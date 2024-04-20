@@ -1,19 +1,22 @@
 """Module for a datastore containing data for retrieval."""
+from __future__ import annotations
+from typing import TYPE_CHECKING
 import abc
 
-try:
-    from pyserini.search.faiss import DenseSearchResult
-except ImportError:
-    raise ImportError(
-        "You need to install the `pyserini` package to use this class."
-    )
+if TYPE_CHECKING:
+    try:
+        from pyserini.search.faiss import DenseSearchResult
+    except ImportError:
+        raise ImportError(
+            "You need to install the `pyserini` package to use this class."
+        )
 
-try:
-    from faiss import IndexPreTransform
-except ImportError:
-    raise ImportError(
-        "You need to install the `faiss` package to use this class."
-    )
+    try:
+        from faiss import IndexPreTransform
+    except ImportError:
+        raise ImportError(
+            "You need to install the `faiss` package to use this class."
+        )
 
 class Datastore:
     """A datastore containing data for retrieval."""
