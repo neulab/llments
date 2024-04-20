@@ -272,6 +272,8 @@ class PyseriniDatastore(Datastore):
 
         Args:
             query (str): Query string to search for.
+            index (IndexPreTransform): The vector index from faiss 
+            docids (list[str]): List of docids.
             max_results (int): Maximum number of results to retrieve.
 
         Returns:
