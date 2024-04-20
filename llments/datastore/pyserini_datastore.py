@@ -2,8 +2,20 @@
 
 import os
 from llments.datastore.datastore import Datastore
-from pyserini.search.faiss import DenseSearchResult
-from faiss import IndexPreTransform
+
+try:
+    from pyserini.search.faiss import DenseSearchResult
+except ImportError:
+    raise ImportError(
+        "You need to install the `pyserini` package to use this class."
+    )
+
+try:
+    from faiss import IndexPreTransform
+except ImportError:
+    raise ImportError(
+        "You need to install the `faiss` package to use this class."
+    )
 
 class PyseriniDatastore(Datastore):
     """A PyseriniDatastore containing data for retrieval."""
@@ -285,6 +297,10 @@ class PyseriniDatastore(Datastore):
             raise ImportError(
                 "You need to install the `pyserini` package to use this class."
             )
+        if index is None:
+            raise ValueError(
+                "Please specify the correct index path."
+            )
         encoder = AutoQueryEncoder(encoder_dir=self.index_encoder, device=self.device, pooling=self.pooling, l2_norm=self.l2_norm)
         emb_q = encoder.encode(query)
         emb_q = emb_q.reshape((1, len(emb_q)))
@@ -293,5 +309,4 @@ class PyseriniDatastore(Datastore):
         indexes = indexes.flat
         return [DenseSearchResult(docids[idx], score)
                 for score, idx in zip(distances, indexes) if idx != -1]
-        return hits
     
