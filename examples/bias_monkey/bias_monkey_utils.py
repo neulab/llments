@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib.gridspec import SubplotSpec
-from scipy.stats import entropy, ttest_1samp, wasserstein_distance
+from scipy.stats import entropy, pearsonr, ttest_1samp, wasserstein_distance
 from tqdm import tqdm
 from tqdm.contrib import itertools as tqdm_itertools
 
@@ -698,3 +698,79 @@ def plot_uncertainity(models: list[str], results_dir: str) -> pd.DataFrame:
     fig.tight_layout()
     plt.savefig("uncertainty.pdf", format="pdf", bbox_inches="tight")
     return df
+
+
+def get_indiv_entropies(
+    bias_type: str, pickle_file: str
+) -> tuple[list[str], list[float]]:
+    """Get individual entropies."""
+    _, second_group, _, _ = get_groups(bias_type)
+    df = pd.read_pickle(pickle_file)
+
+    entropies = []
+    norm_counts = []
+
+    for index, row in df.iterrows():
+        num_options = row["num_options"]
+        if "odd_even" == bias_type and row["type"] == "no middle alpha":
+            num_options = 4
+        elif "opinion_float" == bias_type and row["type"] == "float alpha":
+            num_options = 6
+
+        temp = row["responses"].replace(" ", "").split(",")
+        cnts = sorted(Counter(temp).items(), key=itemgetter(0))
+        final_counts = [itm_count for letter, itm_count in cnts]
+        norm_final_counts = [
+            itm_count / sum(final_counts) for itm_count in final_counts
+        ]
+        entropies.append(entropy(norm_final_counts) / np.log(num_options))
+
+        norm_counts.append(norm_final_counts)
+
+    df["entropy"] = entropies
+    df["norm counts"] = norm_counts
+
+    entps = {}
+
+    for key in df["key"].unique():
+        subset_df = df[df["key"] == key][["key", "type", "entropy", "norm counts"]]
+        entps[key] = subset_df.loc[subset_df["type"] == second_group, "entropy"].item()
+
+    return list(entps.keys()), list(entps.values())
+
+
+def get_pearsonr(models: list[str], results_dir: str) -> pd.DataFrame:
+    """Get Pearson correlation."""
+    all_results = []
+    # for i in range(len(models)):
+    #     for j in range(len(bias_types)):
+    for model, bias_type in tqdm_itertools.product(models, bias_types):
+        values, pvals, keys = run_stat_test(
+            bias_type,
+            f"{results_dir}/{model}/csv/{bias_type}.csv",  # TODO: fix this path
+        )
+        effect_sizes = {"keys": keys, "effects": values}
+        df_effect = pd.DataFrame(effect_sizes)
+        df_effect["effects"] = abs(df_effect["effects"]) / 100
+
+        keys, values = get_indiv_entropies(
+            bias_type,
+            f"{results_dir}/{model}/{bias_type}.pickle",  # TODO: fix this path
+        )
+        entps = {"keys": keys, "entps": values}
+        df_entps = pd.DataFrame(entps)
+
+        df_comb = pd.merge(df_effect, df_entps, on="keys")
+        stat_results = pearsonr(df_comb["effects"], df_comb["entps"])
+        all_results.append(
+            [
+                model,
+                bias_type,
+                stat_results.statistic,
+                stat_results.pvalue,
+            ]
+        )
+    return pd.DataFrame(
+        all_results,
+        columns=["model", "bias type", "pearsonr", "p value"],
+    )
