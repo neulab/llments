@@ -5,6 +5,8 @@ import os
 import random
 import re
 import string
+from collections import Counter
+from operator import itemgetter
 from pathlib import Path
 from statistics import mean
 from typing import Any
@@ -13,8 +15,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from scipy.stats import ttest_1samp, wasserstein_distance
+from matplotlib.gridspec import SubplotSpec
+from scipy.stats import entropy, ttest_1samp, wasserstein_distance
 from tqdm import tqdm
+from tqdm.contrib import itertools as tqdm_itertools
 
 from llments.lm.lm import LanguageModel
 
@@ -355,28 +359,29 @@ def plot_heatmap(models: list[str], results_dir: str) -> pd.DataFrame:
 
     all_results = []
 
-    for model in models:
-        for i in range(len(bias_types)):
-            bias_type = bias_types[i]
+    # for model in models:
+    #     for i in range(len(bias_types)):
+    for model, i in tqdm_itertools.product(models, range(len(bias_types))):
+        bias_type = bias_types[i]
+        values, p_value, keys = run_stat_test(
+            bias_type,
+            f"{results_dir}/{model}/csv/{bias_type}.csv",  # TODO: fix this path
+        )
+        lst = [model, clean_bias_labels[i], mean(values), p_value]
+
+        for perturbation in perturbations:
+            if bias_types[i] == "opinion_float":  # qustions are the same
+                bias_type = "odd_even" + perturbation
+            else:
+                bias_type = bias_types[i] + perturbation
+
             values, p_value, keys = run_stat_test(
                 bias_type,
                 f"{results_dir}/{model}/csv/{bias_type}.csv",  # TODO: fix this path
             )
-            lst = [model, clean_bias_labels[i], mean(values), p_value]
+            lst += [mean(values), p_value]
 
-            for perturbation in perturbations:
-                if bias_types[i] == "opinion_float":  # qustions are the same
-                    bias_type = "odd_even" + perturbation
-                else:
-                    bias_type = bias_types[i] + perturbation
-
-                values, p_value, keys = run_stat_test(
-                    bias_type,
-                    f"{results_dir}/{model}/csv/{bias_type}.csv",  # TODO: fix this path
-                )
-                lst += [mean(values), p_value]
-
-            all_results.append(lst)
+        all_results.append(lst)
 
     df = pd.DataFrame(
         all_results,
@@ -396,7 +401,7 @@ def plot_heatmap(models: list[str], results_dir: str) -> pd.DataFrame:
     df = df.round(4)
 
     # plot heatmap
-    models += ["ideal"]
+    models = list(models) + ["ideal"]
     clean_model_labels += ["Most Human-like"]
 
     fig, axs = plt.subplots(2, len(models) // 2, figsize=(15, 6))
@@ -553,4 +558,143 @@ def plot_heatmap(models: list[str], results_dir: str) -> pd.DataFrame:
         axs[r, c].pcolor(x, y, zm, hatch="//", alpha=0.0)
 
     plt.savefig("perturbation.pdf", format="pdf", bbox_inches="tight")
+    return df
+
+
+def get_entropies(bias_type: str, pkl_file: str) -> tuple[float, float, float, float]:
+    """Get entropies."""
+    first_group, second_group, _, _ = get_groups(bias_type)
+
+    df = pd.read_pickle(pkl_file)
+
+    entropies = []
+    norm_counts = []
+
+    for index, row in df.iterrows():
+        num_options = row["num_options"]
+        if "odd_even" == bias_type and row["type"] == "no middle alpha":
+            num_options = 4
+        elif "opinion_float" == bias_type and row["type"] == "float alpha":
+            num_options = 6
+
+        temp = row["responses"].replace(" ", "").split(",")
+        cnts = sorted(Counter(temp).items(), key=itemgetter(0))
+        final_counts = [itm_count for _, itm_count in cnts]
+        norm_final_counts = [
+            itm_count / sum(final_counts) for itm_count in final_counts
+        ]
+        entropies.append(entropy(norm_final_counts) / np.log(num_options))
+
+        norm_counts.append(norm_final_counts)
+
+    df["entropy"] = entropies
+    df["norm counts"] = norm_counts
+
+    orig_entropy = []
+    new_entropy = []
+    entropy_diffs = []
+    for key in df["key"].unique():
+        subset_df = df[df["key"] == key][["key", "type", "entropy", "norm counts"]]
+        entropy_diff = (
+            subset_df.loc[subset_df["type"] == first_group, "entropy"].item()
+            - subset_df.loc[subset_df["type"] == second_group, "entropy"].item()
+        )
+        entropy_diffs.append(entropy_diff)
+        orig_entropy.append(
+            subset_df.loc[subset_df["type"] == second_group, "entropy"].item()
+        )
+        new_entropy.append(
+            subset_df.loc[subset_df["type"] == first_group, "entropy"].item()
+        )
+
+    return (
+        round(np.mean(orig_entropy), 2),
+        round(np.var(orig_entropy), 2),
+        round(np.mean(new_entropy), 2),
+        round(np.var(new_entropy), 2),
+    )
+
+
+def plot_uncertainity(models: list[str], results_dir: str) -> pd.DataFrame:
+    """Plot uncertainity."""
+    clean_model_labels = list(models)
+    all_results = []
+    # for model in models:
+    #     for i in range(len(bias_types)):
+    for model, i in tqdm_itertools.product(models, range(len(bias_types))):
+        bias_type = bias_types[i]
+        orig_mean, orig_std, new_mean, new_std = get_entropies(
+            bias_type,
+            f"{results_dir}/{model}/{bias_type}.pickle",  # TODO: fix this path
+        )
+        lst = [model, bias_type, orig_mean, orig_std, new_mean, new_std]
+        for perturbation in perturbations:
+            if bias_types[i] == "opinion_float":  # qustions are the same
+                bias_type = "odd_even" + perturbation
+            else:
+                bias_type = bias_types[i] + perturbation
+            orig_mean, orig_std, new_mean, new_std = get_entropies(
+                bias_type,
+                f"{results_dir}/{model}/{bias_type}.pickle",  # TODO: fix this path
+            )
+            lst += [new_mean, new_std]
+        all_results.append(lst)
+    df = pd.DataFrame(
+        all_results,
+        columns=[
+            "model",
+            "bias type",
+            "original mean",
+            "original std",
+            "bias mean",
+            "bias std",
+            "key typo mean",
+            "key typo std",
+            "middle random mean",
+            "middle random std",
+            "letter swap mean",
+            "letter swap std",
+        ],
+    )
+    df = df.round(4)
+    fig, axs = plt.subplots(len(models), len(bias_types), figsize=(10, 14))
+
+    for i in range(len(models)):
+        for j in range(len(bias_types)):
+            row = df.loc[
+                (df["model"] == models[i]) & (df["bias type"] == bias_types[j])
+            ]
+
+            x = ["bias", "key typo", "middle random", "letter swap"]
+            y = [
+                row["bias mean"].item(),
+                row["key typo mean"].item(),
+                row["middle random mean"].item(),
+                row["letter swap mean"].mean(),
+            ]
+            e = [
+                row["bias std"].item(),
+                row["key typo std"].item(),
+                row["middle random std"].item(),
+                row["letter swap std"].mean(),
+            ]
+            axs[i, j].errorbar(x, y, yerr=e, fmt="o")
+            axs[i, j].axhline(y=row["original mean"].item(), color="r", linestyle="-")
+            axs[i, j].set_ylim(0, 1)
+
+            axs[i, j].set_xticks(range(len(clean_labels)))
+            axs[i, j].set_xticklabels(clean_labels, rotation=90)
+
+            axs[i, j].set_title(clean_bias_labels[j])
+            if i != len(models) - 1:
+                axs[i, j].get_xaxis().set_visible(False)
+
+    grid = plt.GridSpec(len(models), len(bias_types))
+    for k in range(len(clean_model_labels)):
+        axes = fig.add_subplot(grid[k, ::])
+        axes.set_title(f"{clean_model_labels[k]}\n", fontweight="semibold")
+        axes.set_frame_on(False)
+        axes.axis("off")
+    fig.tight_layout()
+    plt.savefig("uncertainty.pdf", format="pdf", bbox_inches="tight")
     return df
