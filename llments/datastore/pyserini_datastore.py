@@ -297,7 +297,7 @@ class PyseriniDatastore(Datastore):
             raise ImportError(
                 "You need to install the `pyserini` package to use this class."
             )
-        if index is None:
+        if index is None or docids is None:
             raise ValueError(
                 "Please specify the correct index path."
             )
