@@ -2,10 +2,8 @@
 
 import os
 from llments.datastore.datastore import Datastore
-
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from pyserini.search.faiss import DenseSearchResult
+from pyserini.search.faiss import DenseSearchResult
+from faiss import IndexPreTransform
 
 class PyseriniDatastore(Datastore):
     """A PyseriniDatastore containing data for retrieval."""
@@ -59,6 +57,8 @@ class PyseriniDatastore(Datastore):
         self.l2_norm = l2_norm
         self.pooling = pooling
         self.index_encoder = index_encoder
+        self.docid_field = docid_field
+        self.fields = fields
 
         if not os.path.exists(index_path):
             print("Creating the Datastore...")
@@ -264,6 +264,8 @@ class PyseriniDatastore(Datastore):
     def retrieve(
         self,
         query: str | None,
+        index: IndexPreTransform | None,
+        docids: list[str] | None,
         max_results: int,
     ) -> list[DenseSearchResult]:
         """Retrieve documents based on the specified searcher name.
@@ -276,14 +278,18 @@ class PyseriniDatastore(Datastore):
             list[DenseSearchResult]: Retrieved result objects.
         """
         try:
-            from pyserini.search import FaissSearcher
             from pyserini.search.faiss import AutoQueryEncoder
         except ImportError:
             raise ImportError(
                 "You need to install the `pyserini` package to use this class."
             )
         encoder = AutoQueryEncoder(encoder_dir=self.index_encoder, device=self.device, pooling=self.pooling, l2_norm=self.l2_norm)
-        searcher = FaissSearcher(self.index_path, encoder)
-        hits = searcher.search(query, k=max_results)
+        emb_q = encoder.encode(query)
+        emb_q = emb_q.reshape((1, len(emb_q)))
+        distances, indexes = index.search(emb_q, max_results)
+        distances = distances.flat
+        indexes = indexes.flat
+        return [DenseSearchResult(docids[idx], score)
+                for score, idx in zip(distances, indexes) if idx != -1]
         return hits
     

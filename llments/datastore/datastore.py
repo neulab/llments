@@ -1,13 +1,15 @@
 """Module for a datastore containing data for retrieval."""
 import abc
 from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from pyserini.search.faiss import DenseSearchResult
+from pyserini.search.faiss import DenseSearchResult
 
 class Datastore:
     """A datastore containing data for retrieval."""
 
     document_path: str
+    index_path: str
+    docid_field: str
+    fields: list[str]
 
     @abc.abstractmethod
     def retrieve(
