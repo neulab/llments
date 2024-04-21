@@ -250,7 +250,16 @@ class HuggingFaceLMFitter:
             )
 
         # Generate data and prepare training dataset
-        inputs = cls._prepare_training_data(base, target, batch_size, training_steps)
+        samples = target.generate(
+            condition=None,
+            do_sample=True,
+            temperature=1.0,
+            num_return_sequences=batch_size * training_steps,
+        )
+
+        inputs = base.tokenizer(
+            samples, padding=True, truncation=True, return_tensors="pt"
+        )
 
         # convert tokenized text into a Dataset object
         dataset = Dataset.from_dict(inputs)
@@ -285,50 +294,6 @@ class HuggingFaceLMFitter:
         trainer.train()
 
         return base
-
-    @classmethod
-    def _prepare_training_data(
-        cls,
-        base: HuggingFaceLM,
-        target: LanguageModel,
-        batch_size: int,
-        training_steps: int,
-    ) -> Any:
-        """Generate data from the target language model, using generate() function.
-
-        Helper function of fit().
-
-        Args:
-            base: model to fit.
-            target: target language model.
-            batch_size: Number of examples processed in one step.
-            training_steps: Number of steps to train.
-
-        Returns:
-            inputs: Generated data (type: HF BatchEncoding): result from calling HF
-                tokenizer.
-            labels: "Up shift" each token to create the labels.
-        """
-        try:
-            from torch import Tensor
-        except ImportError:
-            raise ImportError(
-                "You need to install the `transformers` package to use this class."
-            )
-        samples = target.generate(
-            condition=None,
-            do_sample=True,
-            temperature=1.0,
-            num_return_sequences=batch_size * training_steps,
-        )
-
-        tokenizer = base.tokenizer
-        inputs = tokenizer(
-            samples, padding=True, truncation=True, return_tensors="pt"
-        )  # return pytorch tensor
-        assert isinstance(inputs, Tensor)
-
-        return inputs
 
 
 def load_from_spec(spec_file: str) -> HuggingFaceLM:
