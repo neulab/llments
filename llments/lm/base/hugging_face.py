@@ -88,8 +88,6 @@ class HuggingFaceLM(LanguageModel):
             max_length=max_length,
             temperature=temperature,
             num_return_sequences=num_return_sequences,
-            clean_up_tokenization_spaces=True,
-            truncation=max_length is not None,
             do_sample=do_sample,
             max_new_tokens=max_new_tokens,
         )

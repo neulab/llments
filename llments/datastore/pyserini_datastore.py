@@ -1,9 +1,24 @@
 """A module for PyseriniDatastore class."""
 
-import os
-from typing import Any
+from __future__ import annotations
+from typing import TYPE_CHECKING
 from llments.datastore.datastore import Datastore
+import os
 
+if TYPE_CHECKING:
+    try:
+        from pyserini.search.faiss import DenseSearchResult
+    except ImportError:
+        raise ImportError(
+            "You need to install the `pyserini` package to use this class."
+        )
+
+    try:
+        from faiss import IndexPreTransform
+    except ImportError:
+        raise ImportError(
+            "You need to install the `faiss` package to use this class."
+        )
 
 class PyseriniDatastore(Datastore):
     """A PyseriniDatastore containing data for retrieval."""
@@ -11,48 +26,58 @@ class PyseriniDatastore(Datastore):
     def __init__(
         self,
         index_path: str,
-        document_path: str | None = None,
-        index_encoder: Any | None = None,
-        fields: list[str] | None = None,
+        document_path: str,
+        index_encoder: str,
+        fields: list[str],
         to_faiss: bool = False,
         device: str = "cpu",
         delimiter: str = "\n",
-        docid_field: str | None = None,
+        docid_field: str = "id",
         batch_size: int = 64,
         max_length: int = 256,
         dimension: int = 768,
         prefix: str | None = None,
-        pooling: str | None = None,
+        pooling: str = "cls",
         l2_norm: bool = False,
         use_openai: bool = False,
         rate_limit: int = 3500,
+        shard_id: int = 0,
+        shard_num: int = 1,
     ):
         """Initializes a PyseriniDatastore object.
 
         Args:
-            index_path: The path to store the generated index.
-            document_path: The path to the document file.
-            index_encoder: The type of document encoder.
-            fields: The document fields to be encoded.
-            to_faiss: Store as a FAISS index.
-            device: The device to be used for encoding.
-            delimiter: Delimiter for document separation.
-            docid_field: Field in the document containing document id.
-            batch_size: Batch size for encoding.
-            max_length: Maximum length of the input sequence.
-            dimension: Dimensionality of the encoding.
-            prefix: Prefix to add to each document.
-            pooling: Pooling strategy for document encoding.
-            l2_norm: Whether to apply L2 normalization.
-            use_openai: Whether to use OpenAI's encoder.
-            rate_limit: Rate limit for OpenAI API requests.
+            index_path (str): The path to store the generated index.
+            document_path (str): The path to the document file.
+            index_encoder (str): The type of document encoder.
+            fields (list[str]): The document fields to be encoded.
+            to_faiss (bool, optional): Store as a FAISS index.
+            device (str, optional): The device to be used for encoding.
+            delimiter (str, optional): Delimiter for document separation.
+            docid_field (str, optional): Field in the document containing document id.
+            batch_size (int, optional): Batch size for encoding.
+            max_length (int, optional): Maximum length of the input sequence.
+            dimension (int, optional): Dimensionality of the encoding.
+            prefix (str, optional): Prefix to add to each document.
+            pooling (str, optional): Pooling strategy for document encoding.
+            l2_norm (bool, optional): Whether to apply L2 normalization.
+            use_openai (bool, optional): Whether to use OpenAI's encoder.
+            rate_limit (int, optional): Rate limit for OpenAI API requests.
+            shard_id (int, optional): id of shards.
+            shard_num (int, optional): number of shards.
         """
         self.index_path = index_path
+        self.document_path = document_path
+        self.device = device
+        self.l2_norm = l2_norm
+        self.pooling = pooling
+        self.index_encoder = index_encoder
+        self.docid_field = docid_field
+        self.fields = fields
 
-        if document_path is not None:
+        if not os.path.exists(index_path):
             print("Creating the Datastore...")
             self.encode(
-                document_path=document_path,
                 index_encoder=index_encoder,
                 fields=fields,
                 delimiter=delimiter,
@@ -67,6 +92,8 @@ class PyseriniDatastore(Datastore):
                 device=device,
                 use_openai=use_openai,
                 rate_limit=rate_limit,
+                shard_id=shard_id,
+                shard_num=shard_num,
             )
         elif not os.path.exists(index_path):
             raise FileNotFoundError(
@@ -75,44 +102,46 @@ class PyseriniDatastore(Datastore):
 
     def encode(
         self,
-        document_path: str | None = None,
-        index_encoder: Any | None = None,
-        fields: list[str] | None = None,
+        index_encoder: str,
+        fields: list[str],
         to_faiss: bool = False,
         device: str = "cpu",
         delimiter: str = "\n",
-        docid_field: str | None = None,
+        docid_field: str = "id",
         batch_size: int = 64,
         max_length: int = 256,
         dimension: int = 768,
         prefix: str | None = None,
-        pooling: str | None = None,
+        pooling: str = "cls",
         l2_norm: bool = False,
         use_openai: bool = False,
         rate_limit: int = 3500,
+        shard_id: int = 0,
+        shard_num: int = 1,
     ) -> None:
         """Encodes documents using the specified parameters.
 
         Args:
-            document_path: The path to the document file.
-            index_encoder: The type of document encoder.
-            fields: The document fields to be encoded.
-            delimiter: Delimiter for document separation.
-            docid_field: Field in the document containing document id.
-            batch_size: Batch size for encoding.
-            max_length: Maximum length of the input sequence.
-            dimension: Dimensionality of the encoding.
-            prefix: Prefix to add to each document.
-            pooling: Pooling strategy for document encoding.
-            l2_norm: Whether to apply L2 normalization.
-            to_faiss: Whether to store as a FAISS index.
-            device: The device to be used for encoding.
-            use_openai: Whether to use OpenAI's encoder.
-            rate_limit: Rate limit for OpenAI API requests.
+            index_encoder (str): The type of document encoder.
+            fields (List[str], optional): The document fields to be encoded.
+            to_faiss (bool, optional): Whether to store as a FAISS index.
+            device (str, optional): The device to be used for encoding.
+            delimiter (str, optional): Delimiter for document separation.
+            docid_field (str, optional): Field in the document containing document id.
+            batch_size (int, optional): Batch size for encoding.
+            max_length (int, optional): Maximum length of the input sequence.
+            dimension (int, optional): Dimensionality of the encoding.
+            prefix (str, optional): Prefix to add to each document.
+            pooling (str, optional): Pooling strategy for document encoding.
+            l2_norm (bool, optional): Whether to apply L2 normalization.
+            use_openai (bool, optional): Whether to use OpenAI's encoder.
+            rate_limit (int, optional): Rate limit for OpenAI API requests.
+            shard_id (int, optional): id of shards.
+            shard_num (int, optional): number of shards.
         """
-        if document_path is None or index_encoder is None or fields is None:
+        if index_encoder is None or fields is None:
             raise ValueError(
-                "document_path, index_encoder and fields are required parameters."
+                "index_encoder and fields are required parameters."
             )
 
         try:
@@ -211,7 +240,7 @@ class PyseriniDatastore(Datastore):
             embedding_writer = JsonlRepresentationWriter(self.index_path)
 
         collection_iterator = JsonlCollectionIterator(
-            document_path, fields, docid_field, delimiter
+            self.document_path, fields, docid_field, delimiter
         )
 
         if use_openai:
@@ -226,8 +255,8 @@ class PyseriniDatastore(Datastore):
         print("Building the index ...")
 
         with embedding_writer:
-            for batch_info in collection_iterator(batch_size):
-                texts = batch_info["text"]
+            for batch_info in collection_iterator(batch_size, shard_id, shard_num):
+                texts = batch_info[fields[0]]
                 titles = batch_info["title"] if "title" in fields else None
                 expands = batch_info["expand"] if "expand" in fields else None
                 fp16 = False
@@ -246,3 +275,41 @@ class PyseriniDatastore(Datastore):
                 embedding_writer.write(batch_info, fields)
 
         print("\nIndex creation completed sucessfully!")
+
+    def retrieve(
+        self,
+        query: str | None,
+        index: IndexPreTransform | None,
+        docids: list[str] | None,
+        max_results: int,
+    ) -> list[DenseSearchResult]:
+        """Retrieve documents based on the specified searcher name.
+
+        Args:
+            query (str): Query string to search for.
+            index (IndexPreTransform): The vector index from faiss 
+            docids (list[str]): List of docids.
+            max_results (int): Maximum number of results to retrieve.
+
+        Returns:
+            list[DenseSearchResult]: Retrieved result objects.
+        """
+        try:
+            from pyserini.search.faiss import AutoQueryEncoder, DenseSearchResult
+        except ImportError:
+            raise ImportError(
+                "You need to install the `pyserini` package to use this class."
+            )
+        if index is None or docids is None:
+            raise ValueError(
+                "Please specify the correct index path."
+            )
+        encoder = AutoQueryEncoder(encoder_dir=self.index_encoder, device=self.device, pooling=self.pooling, l2_norm=self.l2_norm)
+        emb_q = encoder.encode(query)
+        emb_q = emb_q.reshape((1, len(emb_q)))
+        distances, indexes = index.search(emb_q, max_results)
+        distances = distances.flat
+        indexes = indexes.flat
+        return [DenseSearchResult(docids[idx], score)
+                for score, idx in zip(distances, indexes) if idx != -1]
+    
