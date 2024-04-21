@@ -1,6 +1,7 @@
 """Module for HuggingFace language models."""
 
 import json
+import os
 from typing import Any
 
 from llments.lm.lm import LanguageModel
@@ -12,23 +13,49 @@ class HuggingFaceLM(LanguageModel):
     def __init__(
         self,
         model: str,
+        tokenizer_path: str | None = None,
         device: str | None = None,
+        cache_dir: str | None = None,
     ):
         """Initialize a HuggingFaceLM.
 
         Args:
             model: The name of the model.
+            tokenizer_path: path to find tokenizer, used with creating the model from a checkpoint.
             device: The device to run the model on.
+            cache_dir: Path to a directory in which a downloaded pretrained model configuration should be cached
+                        if the standard cache should not be used.
         """
         try:
-            from transformers import TextGenerationPipeline, pipeline
+            from transformers import AutoTokenizer, AutoModelForCausalLM
         except ImportError:
             raise ImportError(
                 "You need to install the `transformers` package to use this class."
             )
-        self.text_generator: TextGenerationPipeline = pipeline(
-            "text-generation", model=model, device=device
-        )
+
+        if not ".ckpt" in model:  # use the same tokenizer as the model
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                model, trust_remote_code=True
+            )
+            self.model = AutoModelForCausalLM.from_pretrained(
+                model, do_sample=True, use_cache=True, cache_dir=cache_dir
+            )
+            self.device = device or "cpu"
+            self.model.to(self.device)
+        elif ".ckpt" in model and tokenizer_path is not None:  # load from checkpoint
+            tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
+            if not tokenizer.pad_token:
+                tokenizer.pad_token = tokenizer.eos_token
+            self.tokenizer = tokenizer
+            self.model = AutoModelForCausalLM.from_pretrained(
+                model, from_tf=bool(".ckpt" in model)
+            )
+        else:
+            raise ValueError(
+                "You must create model from one of the following ways: \n"
+                + "1. Input HF model name.\n"
+                + "2. Load model from a checkpoint file, include tokenizer path as well."
+            )
 
     def generate(
         self,
@@ -55,17 +82,21 @@ class HuggingFaceLM(LanguageModel):
         Returns:
             str: A sampled output sequence from the language model.
         """
-        results = self.text_generator(
-            condition,
-            do_sample=do_sample,
+        inputs = self.tokenizer(
+            condition, return_tensors="pt", truncation=True, max_length=max_length
+        ).to(self.device)
+        outputs = self.model.generate(
+            **inputs,
             max_length=max_length,
-            max_new_tokens=max_new_tokens,
             temperature=temperature,
             num_return_sequences=num_return_sequences,
-            clean_up_tokenization_spaces=True,
-            truncation=max_length is not None,
+            do_sample=do_sample,
+            max_new_tokens=max_new_tokens,
         )
-        return [res["generated_text"] for res in results]
+        return [
+            self.tokenizer.decode(output, skip_special_tokens=True)
+            for output in outputs
+        ]  # decode output tokens to strings
 
     def chat_generate(
         self,
@@ -103,17 +134,27 @@ class HuggingFaceLM(LanguageModel):
         Returns:
             list[list[dict[str, str]]]: list of chat contexts with the generated responses.
         """
-        results = self.text_generator(
-            messages,
-            do_sample=do_sample,
+        chat_context = ""
+        for message in messages:
+            chat_context += f'{message["role"]}: {message["content"]}\n'
+
+        inputs = self.tokenizer.encode(
+            chat_context, return_tensors="pt", truncation=True, max_length=max_length
+        )
+        inputs = inputs.to(self.device)
+
+        generated_tokens = self.model.generate(
+            input_ids=inputs,
             max_length=max_length,
             max_new_tokens=max_new_tokens,
             temperature=temperature,
             num_return_sequences=num_return_sequences,
-            clean_up_tokenization_spaces=True,
-            truncation=max_length is not None,
+            do_sample=do_sample,
         )
-        return [res["generated_text"] for res in results]
+
+        return [
+            self.tokenizer.decode(g, skip_special_tokens=True) for g in generated_tokens
+        ]
 
     def set_seed(self, seed: int) -> None:
         """Set the seed for the language model.
@@ -154,28 +195,53 @@ class HuggingFaceLMFitter:
         cls,
         base: HuggingFaceLM,
         target: LanguageModel,
-        batch_size: int = 32,
+        batch_size: int = 8,  # batch size per device
         training_steps: int = 200,
-        output_dir: str = "./training_results",
+        output_dir: str = "./training_results",  # ie. checkpoint_dir
         logging_dir: str = "./logs",
+        do_train: bool = False,
+        do_eval: bool = False,
+        learning_rate: float = 5e-05,
+        warmup_steps: int = 0,
+        max_grad_norm: float = 1.0,
+        evalution_strategy: str = "no",
+        eval_steps: int = 500,
+        prediction_loss_only: bool = False,
+        optim: str = "adamw_torch",
+        logging_steps: int = 500,
     ) -> LanguageModel:
         """Fit the language model to a target language model's distribution.
 
         Args:
             base: The HF language model to fine-tune.
             target: The language model that should be fitted to.
-            batch_size: Batch size for training.
+            batch_size: The batch size per GPU/XPU/TPU/MPS/NPU core/CPU for training and evaluation.
             training_steps: Number of training steps.
+            training_epochs: Number of iterations to go through the entire dataset.
             output_dir: Directory to save training results.
             logging_dir: Directory to save logs.
+            do_train: Whether to run training or not.
+            do_eval: Whether to run evaluation on the validation set or not.
+                        Will be set to True if evaluation_strategy is different from "no".
+            learning_rate: The initial learning rate for AdamW optimizer.
+            warmup_steps: Number of steps used for a linear warmup from 0 to learning_rate.
+            max_grad_norm: Maximum gradient norm (for gradient clipping).
+            evalution_strategy: The evaluation strategy to adopt during training.
+            eval_steps: Number of update steps between two evaluations if evaluation_strategy="steps".
+            prediction_loss_only: When performing evaluation and generating predictions, only returns the loss.
+            optim: The optimizer to use. Can only choose from a list of names.
+            logging_steps: Number of update steps between two logs if logging_strategy="steps".
 
         Returns:
             The fitted language model.
         """
         try:
-            import torch
-            from torch.utils.data import Dataset
-            from transformers import Trainer, TrainingArguments
+            from transformers import (
+                TrainingArguments,
+                Trainer,
+                DataCollatorForLanguageModeling,
+            )
+            from datasets import Dataset
         except ImportError:
             raise ImportError(
                 "You need to install 'transformers' and 'torch' packages to use this "
@@ -183,79 +249,6 @@ class HuggingFaceLMFitter:
             )
 
         # Generate data and prepare training dataset
-        inputs, labels = cls._prepare_training_data(
-            base, target, batch_size, training_steps
-        )
-
-        class TrainingDataset(Dataset):  # type: ignore
-            def __init__(
-                self, encodings: dict[str, torch.Tensor], labels: torch.Tensor
-            ):
-                self.encodings = encodings
-                self.labels = labels
-
-            def __getitem__(self, idx: int) -> dict[str, torch.Tensor]:
-                item = {
-                    key: torch.tensor(val[idx]) for key, val in self.encodings.items()
-                }
-                item["labels"] = torch.tensor(self.labels[idx])
-                return item
-
-            def __len__(self) -> int:
-                return len(self.labels)
-
-        dataset = TrainingDataset(inputs["input_ids"], labels)
-
-        num_train_epochs = training_steps / (len(dataset) / batch_size)
-
-        training_args = TrainingArguments(
-            output_dir=output_dir,
-            num_train_epochs=num_train_epochs,
-            per_device_train_batch_size=batch_size,
-            logging_dir=logging_dir,
-            logging_steps=10,
-        )
-
-        trainer = Trainer(
-            model=base.text_generator.model,
-            args=training_args,
-            train_dataset=dataset,
-        )
-
-        trainer.train()
-
-        return base
-
-    @classmethod
-    def _prepare_training_data(
-        cls,
-        base: HuggingFaceLM,
-        target: LanguageModel,
-        batch_size: int,
-        training_steps: int,
-    ) -> tuple[dict[str, Any], Any]:
-        """Generate data from the target language model, using generate() function.
-
-        Helper function of fit().
-
-        Args:
-            base: model to fit.
-            target: target language model.
-            batch_size: Number of examples processed in one step.
-            training_steps: Number of steps to train.
-
-        Returns:
-            inputs: Generated data (type: HF BatchEncoding): result from calling HF
-                tokenizer.
-            labels: "Up shift" each token to create the labels.
-        """
-        try:
-            import torch
-        except ImportError:
-            raise ImportError(
-                "You need to install/import 'torch' package to use this function."
-            )
-
         samples = target.generate(
             condition=None,
             do_sample=True,
@@ -263,20 +256,53 @@ class HuggingFaceLMFitter:
             num_return_sequences=batch_size * training_steps,
         )
 
-        tokenizer = base.text_generator.tokenizer
-        inputs = tokenizer(
+        if not base.tokenizer.pad_token:
+            base.tokenizer.pad_token = base.tokenizer.eos_token
+        inputs = base.tokenizer(
             samples, padding=True, truncation=True, return_tensors="pt"
-        )  # return pytorch tensor
+        )
 
-        labels = inputs.input_ids[:, 1:].clone()
-        labels = torch.nn.functional.pad(
-            labels, (0, 1), value=-100
-        )  # Pad with -100 on the right
+        # convert tokenized text into a Dataset object
+        dataset = Dataset.from_dict(inputs)
 
-        # Adjust input_ids by removing the last token to match labels' size
-        inputs.input_ids = inputs.input_ids[:, :-1]
+        training_args = TrainingArguments(
+            output_dir=output_dir,
+            do_train=do_train,
+            do_eval=do_eval,
+            per_device_train_batch_size=batch_size,
+            per_device_eval_batch_size=batch_size,
+            learning_rate=learning_rate,
+            warmup_steps=warmup_steps,
+            max_grad_norm=max_grad_norm,
+            max_steps=training_steps,  # use steps here
+            optim=optim,
+            evaluation_strategy=evalution_strategy,
+            eval_steps=eval_steps,
+            prediction_loss_only=prediction_loss_only,
+            logging_dir=logging_dir,
+            logging_steps=logging_steps,
+        )
 
-        return inputs, labels
+        # Make output_dir and logging_dir
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        if not os.path.exists(logging_dir):
+            os.makedirs(logging_dir)
+
+        trainer = Trainer(
+            model=base.model,
+            args=training_args,
+            data_collator=DataCollatorForLanguageModeling(
+                tokenizer=base.tokenizer, mlm=False
+            ),
+            train_dataset=dataset,
+        )
+
+        trainer.train()
+        base.tokenizer.save_pretrained(output_dir)
+        trainer.save_model(output_dir)
+
+        return base
 
 
 def load_from_spec(spec_file: str) -> HuggingFaceLM:
@@ -297,3 +323,16 @@ def load_from_spec(spec_file: str) -> HuggingFaceLM:
     device = spec.get("device", None)
 
     return HuggingFaceLM(model=model_name, device=device)
+
+
+def load_from_checkpoint(model_path: str, tokenizer_path: str) -> HuggingFaceLM:
+    """Load a language model from a checkpoint file.
+
+    Args:
+        model_path: model checkpoint path, has the suffix ".ckpt"
+        tokenizer_path: the path to find tokenizer.
+
+    Returns:
+        A HuggingFaceLM instance.
+    """
+    return HuggingFaceLM(model=model_path, tokenizer_path=tokenizer_path)

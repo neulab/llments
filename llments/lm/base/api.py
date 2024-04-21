@@ -15,6 +15,7 @@ class APIBasedLM(LanguageModel):
     Attributes:
         model_name (str): The name of the language model.
     """
+    
     @abc.abstractmethod
     def __init__(self, model_name: str) -> None:
         """Initialize the APIBasedLM instance.
@@ -39,3 +40,4 @@ class APIBasedLM(LanguageModel):
             model=self.model_name,
             messages=[{"content": prompt, "role": "user"}]
         )
+        return str(response["choices"][0]["message"]["content"])

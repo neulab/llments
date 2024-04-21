@@ -1,23 +1,89 @@
-"""A module for retrieval-augmented generation based language models."""
+"""Module for RAG language model."""
 
+import json
+import os
 from llments.datastore.datastore import Datastore
 from llments.lm.lm import LanguageModel
 
-
 class RAGLanguageModel(LanguageModel):
-    """Retrieval-augmented generation based language models."""
+    """RAGLanguageModel class for performing Retrieval Augmented Generation."""
 
-    def __init__(self, base: LanguageModel, datastore: Datastore):
+    def __init__(
+        self,
+        base: LanguageModel,
+        datastore: Datastore,
+        max_results: int = 1,
+    ) -> None:
         """Apply retrieval-augmented generation over a datastore.
 
         Args:
-            base: The language model to be modified.
-            datastore: The datastore to be used to retrieve the relevant information.
+            base (LanguageModel): The base language model to be modified.
+            datastore (Datastore): The datastore object for document index.
+            max_results (int, optional): Maximum number of results to retrieve. Defaults to 1.
+        """
+        try:
+            import faiss
+        except ImportError:
+            raise ImportError(
+                "You need to install the `faiss` package to use this class."
+            )
+        self.base = base
+        self.datastore = datastore
+        print("Loading the index...")
+        self.index = faiss.read_index(os.path.join(datastore.index_path, 'index'), faiss.IO_FLAG_MMAP)
+        self.docids = RAGLanguageModel.load_docids(os.path.join(datastore.index_path, 'docid'))
+        print("Index loaded successfully!")
+        print("Loading the document file...")
+        self.doc_dict = self.read_jsonl_to_dict(datastore.document_path)
+        print("Documents loaded successfully!")
+        self.max_results = max_results
+
+    def set_max_results(
+        self,
+        max_results: int
+    ) -> None:
+        """Set the max retrieval results for RAG.
+
+        Args:
+            max_results (int): The maximum retrieved results for RAG.
+        """    
+        self.max_results = max_results
+
+    def read_jsonl_to_dict(
+        self,
+        file_path: str
+    ) -> dict[str, str]:
+        """Read JSONL file and convert it into a dictionary with document ID as keys and contents as values.
+
+        Args:
+            file_path (str): Path to the JSONL file.
 
         Returns:
-            LanguageModel: The enhanced language model.
+            dict: Dictionary containing document contents with document ID as keys.
         """
+        data_dict = {}
+        with open(file_path, 'r', encoding='utf-8') as file:
+            for line in file:
+                json_data = json.loads(line)
+                data_dict[str(json_data[self.datastore.docid_field])] = json_data[self.datastore.fields[0]]
+        return data_dict
+    
+    @staticmethod
+    def load_docids(
+        file_path: str
+    ) -> list[str]:
+        """Read docids and convert it into a list.
 
+        Args:
+            file_path (str): Path to the docids file.
+
+        Returns:
+            dict: List containing document IDs.
+        """
+        with open(file_path, 'r') as file:
+            docids = [line.rstrip() for line in file.readlines()]
+        return docids
+    
     def generate(
         self,
         condition: str | None,
@@ -41,6 +107,33 @@ class RAGLanguageModel(LanguageModel):
                 sequences for each element in the batch.
 
         Returns:
-            str: Sampled output sequences from the language model.
+            str: output sequence from the language model.
         """
-        raise NotImplementedError
+        top_docs = self.datastore.retrieve(
+            condition,
+            index=self.index,
+            docids=self.docids,
+            max_results=self.max_results,
+        )
+
+        context = '\n'.join([self.doc_dict[str(key.docid)] for key in top_docs])
+        prompt = None
+        if condition is not None:
+            prompt = "\nContext: " + context + "\nPlease answer the following question.\nQuestion: " + condition + "\nAnswer: "
+        
+        lm_response = self.base.generate(
+            condition=prompt,
+            do_sample=do_sample,
+            max_length=max_length,
+            max_new_tokens=max_new_tokens,
+            temperature=temperature,
+            num_return_sequences=num_return_sequences,
+        )
+
+        return lm_response
+    
+
+        
+
+        
+
