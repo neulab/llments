@@ -1,6 +1,7 @@
 """Module for HuggingFace language models."""
 
 import json
+import os
 from typing import Any
 
 from llments.lm.lm import LanguageModel
@@ -255,6 +256,8 @@ class HuggingFaceLMFitter:
             num_return_sequences=batch_size * training_steps,
         )
 
+        if not base.tokenizer.pad_token:
+            base.tokenizer.pad_token = base.tokenizer.eos_token
         inputs = base.tokenizer(
             samples, padding=True, truncation=True, return_tensors="pt"
         )
@@ -280,6 +283,12 @@ class HuggingFaceLMFitter:
             logging_steps=logging_steps,
         )
 
+        # Make output_dir and logging_dir
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        if not os.path.exists(logging_dir):
+            os.makedirs(logging_dir)
+
         trainer = Trainer(
             model=base.model,
             args=training_args,
@@ -290,6 +299,8 @@ class HuggingFaceLMFitter:
         )
 
         trainer.train()
+        base.tokenizer.save_pretrained(output_dir)
+        trainer.save_model(output_dir)
 
         return base
 

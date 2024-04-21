@@ -8,7 +8,7 @@ import pandas as pd
 from llments.lm.lm import LanguageModel
 
 
-class EmpiricalDistribution(LanguageModel):
+class EmpiricalLM(LanguageModel):
     """An empirical distribution of text data."""
 
     def __init__(self, data: list[str], probs: list[float] | None = None):
@@ -121,16 +121,14 @@ class EmpiricalDistribution(LanguageModel):
         random.seed(seed)
 
 
-def load_from_text_file(text_file: str) -> EmpiricalDistribution:
+def load_from_text_file(text_file: str) -> EmpiricalLM:
     """Load the distribution from a text file."""
     with open(text_file, "r") as f:
-        return EmpiricalDistribution(f.readlines())
+        return EmpiricalLM(f.readlines())
 
 
-def load_from_json_file(json_file: str) -> EmpiricalDistribution:
+def load_from_json_file(json_file: str) -> EmpiricalLM:
     """Load the distribution from a text file."""
     with open(json_file, "r") as f:
         data = json.load(f)
-        return EmpiricalDistribution(
-            [x["text"] for x in data], [x["prob"] for x in data]
-        )
+        return EmpiricalLM([x["text"] for x in data], [x["prob"] for x in data])
