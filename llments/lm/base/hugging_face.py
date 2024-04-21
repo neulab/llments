@@ -255,6 +255,8 @@ class HuggingFaceLMFitter:
             num_return_sequences=batch_size * training_steps,
         )
 
+        if not base.tokenizer.pad_token:
+            base.tokenizer.pad_token = base.tokenizer.eos_token
         inputs = base.tokenizer(
             samples, padding=True, truncation=True, return_tensors="pt"
         )
