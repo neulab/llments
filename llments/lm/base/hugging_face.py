@@ -1,6 +1,7 @@
 """Module for HuggingFace language models."""
 
 import json
+import os
 from typing import Any
 
 from llments.lm.lm import LanguageModel
@@ -282,6 +283,12 @@ class HuggingFaceLMFitter:
             logging_steps=logging_steps,
         )
 
+        # Make output_dir and logging_dir
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        if not os.path.exists(logging_dir):
+            os.makedirs(logging_dir)
+
         trainer = Trainer(
             model=base.model,
             args=training_args,
@@ -292,6 +299,7 @@ class HuggingFaceLMFitter:
         )
 
         trainer.train()
+        trainer.save_model(output_dir)
 
         return base
 
