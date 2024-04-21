@@ -299,6 +299,7 @@ class HuggingFaceLMFitter:
         )
 
         trainer.train()
+        base.tokenizer.save_pretrained(output_dir)
         trainer.save_model(output_dir)
 
         return base
