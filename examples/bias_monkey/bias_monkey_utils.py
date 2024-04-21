@@ -21,6 +21,7 @@ from tqdm import tqdm
 from tqdm.contrib import itertools as tqdm_itertools
 
 from llments.lm.lm import LanguageModel
+import ast
 
 bias_types = [
     "acquiescence",
@@ -774,3 +775,206 @@ def get_pearsonr(models: list[str], results_dir: str) -> pd.DataFrame:
         all_results,
         columns=["model", "bias type", "pearsonr", "p value"],
     )
+
+
+class PandasCSVReader:
+    """A class to read CSV files using pandas, with caching."""
+
+    cache: dict[str, pd.DataFrame] = {}
+
+    @classmethod
+    def read(cls, csv_file: str) -> pd.DataFrame:
+        """Read a CSV file, using a cached version if available."""
+        if csv_file in cls.cache:
+            return cls.cache[csv_file]
+        else:
+            df = pd.read_csv(csv_file, low_memory=False)
+            cls.cache[csv_file] = df
+            return df
+
+
+def get_human_responses(
+    pew_categorized_csv: str, human_resp_dir: str, output_path: str
+) -> pd.DataFrame:
+    """Get human responses."""
+    df = pd.read_csv(pew_categorized_csv)
+    human_dist_df = pd.DataFrame(columns=["wave", "key", "distribution"])
+
+    for index, row in df.iterrows():
+        key = row["key"]
+        wave = row["Wave"]
+        if wave == "W53":
+            wave = "W54"
+        if not pd.isna(wave):
+            wave_dir = f"{human_resp_dir}/American_Trends_Panel_{wave}"
+            human_df = PandasCSVReader.read(wave_dir + "/responses.csv")
+            info_df = PandasCSVReader.read(wave_dir + "/info.csv")
+            if type(info_df["references"][0]) == str:
+                info_df["references"] = (
+                    info_df["references"].fillna("[]").apply(lambda x: eval(x))
+                )
+            responses = list(human_df[key])
+            options = list(info_df[info_df["key"] == key].references)[0][
+                :-1
+            ]  # ignoring "Refused" option
+            alpha_responses = {}
+            for i in range(len(options)):
+                alpha_responses[string.ascii_lowercase[i]] = 0
+            for response in responses:
+                if response in options:
+                    i = options.index(response)
+                    count = alpha_responses[string.ascii_lowercase[i]]
+                    alpha_responses[string.ascii_lowercase[i]] = count + 1
+            total = sum(alpha_responses.values())
+            alpha_resp_norm = {a: alpha_responses[a] / total for a in alpha_responses}
+            question_row = pd.DataFrame(
+                {
+                    "wave": wave,
+                    "key": key,
+                    "distribution": str(alpha_resp_norm),
+                },
+                index=[0],
+            )
+            human_dist_df = pd.concat([human_dist_df, question_row])
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    human_dist_df.to_pickle(output_path)
+    return human_dist_df
+
+
+def get_model_responses(
+    model: str, bias_type: str, human_dist_dir: str, results_dir: str, output_path: str
+) -> pd.DataFrame:
+    """Get model responses."""
+    model_dist_df = pd.DataFrame(columns=["key", "distribution"])
+    bias_file_name = bias_type
+    if bias_type == "odd_even":
+        bias_file_name = "odd_even-opinion_float"
+    human_df = pd.read_pickle(f"{human_dist_dir}/{bias_file_name}.pickle")
+    human_df["distribution"] = (
+        human_df["distribution"].fillna("{}").apply(lambda x: eval(x))
+    )
+    df = pd.read_pickle(f"{results_dir}/{model}/{bias_type}.pickle")
+
+    if bias_type != "odd_even":
+        df = df[df["type"] == "orig alpha"]
+    else:
+        df_odd_even_opinion = pd.DataFrame(columns=["key", "responses"])
+        for index, row in human_df.iterrows():
+            key = row["key"]
+            num_options = len(row.distribution.keys())
+            if (
+                num_options % 2 == 0
+            ):  # if even, associated row in model results is 'no middle alpha'
+                row_df = df.loc[(df["key"] == key) & (df["type"] == "no middle alpha")]
+                row = row_df.iloc[0]
+                responses = row.responses
+            else:
+                row_df = df.loc[(df["key"] == key) & (df["type"] == "middle alpha")]
+                row = row_df.iloc[0]
+                responses = row.responses
+            question_row = pd.DataFrame(
+                {
+                    "key": key,
+                    "responses": responses,
+                },
+                index=[0],
+            )
+            df_odd_even_opinion = pd.concat([df_odd_even_opinion, question_row])
+        df = df_odd_even_opinion
+
+    invalid = 0
+    for index, row in df.iterrows():
+        key = row["key"]
+        if not key == "ANES1" and not key == "ANES2":
+            num_options = len(human_df[human_df["key"] == key].distribution[0].keys())
+            responses = list(row.responses.split(","))
+            alpha_responses = {}
+            for i in range(num_options):
+                alpha_responses[string.ascii_lowercase[i]] = 0
+            for response in responses[:50]:
+                response = response.strip().lower()
+                if response not in alpha_responses.keys():
+                    invalid += 1
+                else:
+                    count = alpha_responses[response]
+                    alpha_responses[response] = count + 1
+            total = sum(alpha_responses.values())
+            alpha_resp_norm = {a: alpha_responses[a] / total for a in alpha_responses}
+            question_row = pd.DataFrame(
+                {
+                    "key": key,
+                    "distribution": str(alpha_resp_norm),
+                },
+                index=[0],
+            )
+            model_dist_df = pd.concat([model_dist_df, question_row])
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    model_dist_df.to_pickle(output_path)
+    return model_dist_df
+
+
+def get_max_wd(ordered_ref_weights: list[float]) -> float:
+    """Get maximum Wasserstein distance."""
+    d0, d1 = np.zeros(len(ordered_ref_weights)), np.zeros(len(ordered_ref_weights))
+    d0[np.argmax(ordered_ref_weights)] = 1
+    d1[np.argmin(ordered_ref_weights)] = 1
+    max_wd: float = wasserstein_distance(
+        ordered_ref_weights, ordered_ref_weights, d0, d1
+    )
+    return max_wd
+
+
+def get_x_ord(num_item: int, bias_type: str) -> list[float]:
+    """Get x order."""
+    if bias_type in ["acquiescence", "response_order", "allow_forbid"]:
+        return [num * 1.0 for num in range(1, num_item + 1)]
+    elif bias_type == "odd_even" or bias_type == "opinion_float":
+        if num_item == 4:
+            return [1.0, 2.0, 4.0, 5.0]
+        else:
+            return [1.0, 2.0, 3.0, 4.0, 5.0]
+    else:
+        raise ValueError(f"Invalid bias type: {bias_type}")
+
+
+def compute_wasserstein_distance(
+    models: list[str], dist_dir: str, results_dir: str
+) -> pd.DataFrame:
+    """Compute Wasserstein distance."""
+    w_dists = []
+    effect_lst = []
+    for model, bias_type in tqdm_itertools.product(models, bias_types):
+        scores, p_value, keys = run_stat_test(
+            bias_type, f"{results_dir}/{model}/csv/{bias_type}.csv"
+        )
+        for score, key in zip(scores, keys):
+            effect_lst.append([key, bias_type, model, score / 50.0])
+
+        new_bias_type = "odd_even" if bias_type == "opinion_float" else bias_type
+        model_df = pd.read_pickle(f"{dist_dir}/{model}_dist/{new_bias_type}.pickle")
+
+        new_bias_type = (
+            "odd_even-opinion_float" if new_bias_type == "odd_even" else new_bias_type
+        )
+        human_df = pd.read_pickle(f"{dist_dir}/human_dist/{new_bias_type}.pickle")
+
+        comb_df = pd.merge(model_df, human_df, on="key")
+        for key in comb_df["key"]:
+            model_dist = comb_df[comb_df["key"] == key]["distribution_x"].item()
+            model_dist = ast.literal_eval(model_dist)
+            num_items = len(model_dist.keys())
+            model_dist = [model_dist[key] for key in model_dist.keys()]
+            human_dist = comb_df[comb_df["key"] == key]["distribution_y"].item()
+            human_dist = ast.literal_eval(human_dist)
+            human_dist = [human_dist[key] for key in human_dist.keys()]
+            x_ordinal = get_x_ord(num_items, bias_type)
+            dist = wasserstein_distance(
+                x_ordinal, x_ordinal, model_dist, human_dist
+            ) / get_max_wd(x_ordinal)
+            w_dists.append([key, bias_type, model, dist])
+
+    dist_df = pd.DataFrame(w_dists, columns=["key", "bias type", "model", "w_dist"])
+    effect_df = pd.DataFrame(
+        effect_lst, columns=["key", "bias type", "model", "effect"]
+    )
+    return pd.merge(effect_df, dist_df)
