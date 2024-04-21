@@ -1,7 +1,7 @@
 """Module for HuggingFace language models."""
 
 import json
-from typing import Any, Dict
+from typing import Any
 
 from llments.lm.lm import LanguageModel
 
@@ -243,7 +243,6 @@ class HuggingFaceLMFitter:
                 DataCollatorForLanguageModeling,
             )
             from datasets import Dataset
-            from transformers import Trainer, TrainingArguments
         except ImportError:
             raise ImportError(
                 "You need to install 'transformers' and 'torch' packages to use this "
@@ -294,7 +293,7 @@ class HuggingFaceLMFitter:
         target: LanguageModel,
         batch_size: int,
         training_steps: int,
-    ) -> Dict[str, Any]:
+    ) -> Any:
         """Generate data from the target language model, using generate() function.
 
         Helper function of fit().
@@ -310,6 +309,12 @@ class HuggingFaceLMFitter:
                 tokenizer.
             labels: "Up shift" each token to create the labels.
         """
+        try:
+            from torch import Tensor
+        except ImportError:
+            raise ImportError(
+                "You need to install the `transformers` package to use this class."
+            )
         samples = target.generate(
             condition=None,
             do_sample=True,
@@ -321,6 +326,7 @@ class HuggingFaceLMFitter:
         inputs = tokenizer(
             samples, padding=True, truncation=True, return_tensors="pt"
         )  # return pytorch tensor
+        assert isinstance(inputs, Tensor)
 
         return inputs
 
