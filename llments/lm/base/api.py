@@ -1,9 +1,11 @@
 """Base class for API-Based Language Models."""
 
 import os
+import abc
 from litellm import acompletion
+from llments.lm.lm import LanguageModel
 
-class APIBasedLM:
+class APIBasedLM(LanguageModel):
     """Base class for API-Based Language Models.
 
     Represents a language model that interacts with an API for generating responses.
@@ -16,7 +18,7 @@ class APIBasedLM:
     Attributes:
         model_name (str): The name of the language model.
     """
-    
+    @abc.abstractmethod
     def __init__(self, model_name: str) -> None:
         """Initialize the APIBasedLM instance.
 
@@ -24,7 +26,8 @@ class APIBasedLM:
             model_name (str): The name of the language model.
         """
         self.model_name = model_name
-    
+        
+    @abc.abstractmethod
     async def generate_response(self, prompt: str) -> str:
         """Generate a response based on the given prompt.
 
