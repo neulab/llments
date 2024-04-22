@@ -43,7 +43,12 @@ clean_labels = ["bias", "key typo", "middle random", "letter swap"]
 
 
 def is_valid_prediction(answer: str, num_options: int) -> bool:
-    """Check if the response is a valid prediction."""
+    """Check if the response is a valid prediction.
+
+    Args:
+        answer: The response.
+        num_options: The number of options.
+    """
     answer = answer.strip()
     valid_options = [*string.ascii_uppercase[:num_options]]
     # for word in re.split("[^a-zA-Z]", answer):
@@ -55,7 +60,12 @@ def is_valid_prediction(answer: str, num_options: int) -> bool:
 
 
 def reverse_label(num_options: int, responses: str) -> str:
-    """Reverse the labels of the responses."""
+    """Reverse the labels of the responses.
+
+    Args:
+        num_options: The number of options.
+        responses: The responses.
+    """
     response_list = list(responses.split(","))
     alpha_labels = list(string.ascii_lowercase[:num_options])
     reverse_labels = alpha_labels[::-1]
@@ -65,7 +75,12 @@ def reverse_label(num_options: int, responses: str) -> str:
 
 
 def shift_label(num_options: int, responses: str) -> str:
-    """Shift the labels of the responses."""
+    """Shift the labels of the responses.
+
+    Args:
+        num_options: The number of options.
+        responses: The responses.
+    """
     if num_options % 2 == 1:
         return responses
     # if even, shift responses by 1 after midpoint
@@ -85,7 +100,11 @@ def shift_label(num_options: int, responses: str) -> str:
 
 
 def get_col_names(bias_type: str) -> list[str]:
-    """Get the column names for the bias type."""
+    """Get the column names for the bias type.
+
+    Args:
+        bias_type: one of ["acquiescence", "allow_forbid", "odd_even", "response_order", "question_order", "opinion_float"]
+    """
     bias_cols = {
         "acquiescence": ["orig alpha", "pos alpha"],
         "allow_forbid": ["orig alpha", "forbid alpha"],
@@ -99,7 +118,11 @@ def get_col_names(bias_type: str) -> list[str]:
 
 
 def get_groups(bias_type: str) -> tuple[str, str, list[str], list[str]]:
-    """Get the groups for the bias type."""
+    """Get the groups for the bias type.
+
+    Args:
+        bias_type: one of ["acquiescence", "allow_forbid", "odd_even", "response_order", "opinion_float"]
+    """
     if "acquiescence" in bias_type:
         first_group = "pos alpha"
         second_group = "orig alpha"
@@ -147,7 +170,14 @@ def format_df(
     perturbation: str | None = None,
     num_responses: int = 50,
 ) -> pd.DataFrame:
-    """Format the dataframe for the bias type."""
+    """Re-format the dataframe.
+
+    Args:
+        all_data_df: The dataframe containing the responses.
+        bias_type: one of ["acquiescence", "allow_forbid", "odd_even", "response_order", "opinion_float"]
+        perturbation: one of ["key_typo", "middle_random", "letter_swap"]
+        num_responses: The number of responses that were sampled for each question.
+    """
     if bias_type == "acquiescence_reword":
         bias_type = "acquiescence"
     if perturbation not in ["key_typo", "middle_random", "letter_swap"]:
@@ -209,7 +239,9 @@ def generate_survey_responses(
     model: LanguageModel,
     prompts_file: str,
     bias_type: str,
+    perturbation: str,
     output_path: str,
+    output_csv: str,
     is_chat_model: bool = True,
     seed: int | None = None,
     num_samples: int = 50,
@@ -223,8 +255,10 @@ def generate_survey_responses(
     Args:
         model: The language model.
         prompts_file: The csv file containing the prompts.
-        bias_type: one of ["acquiescence", "allow_forbid", "odd_even", "response_order", "question_order"]
+        bias_type: one of ["acquiescence", "allow_forbid", "odd_even", "response_order", "opinion_float"]
+        perturbation: one of ["key_typo", "middle_random", "letter_swap"]
         output_path: output path (pickle file).
+        output_csv: output csv file.
         is_chat_model: Whether the model is a chat model.
         seed: The seed for the language model.
         num_samples: The number of valid (i.e. one of the letter options) responses to sample.
@@ -255,8 +289,6 @@ def generate_survey_responses(
                 and "num options new" in prompts.columns
                 else row["num options"]
             )
-            print(f"prompt_col_name {prompt_col_name}, num_options {num_options}")
-            print(f"question {question}")
             all_answers: list[str] = []
             max_attempts = max_attempts or num_samples * 10
             num_attempts = 0
@@ -269,7 +301,7 @@ def generate_survey_responses(
                         },
                         {
                             "role": "user",
-                            "content": prompt_template + question,
+                            "content": prompt_template + question + "\nAnswer: ",
                         },
                     ]
                     chat_responses = model.chat_generate(
@@ -308,14 +340,20 @@ def generate_survey_responses(
                     "responses": ",".join(all_answers[:num_samples]),
                 }
             )
-        break  # TODO: delete this
     results_df = pd.DataFrame(results)
     results_df.to_pickle(output_path)
+    Path(output_csv).parent.mkdir(parents=True, exist_ok=True)
+    format_df(results_df, bias_type, perturbation).to_csv(output_csv, index=False)
     return results_df
 
 
 def run_stat_test(bias_type: str, csv_file: str) -> tuple[list[float], Any, list[str]]:
-    """Run a statistical test."""
+    """Run a statistical test.
+
+    Args:
+        bias_type: one of ["acquiescence", "allow_forbid", "odd_even", "response_order", "opinion_float"]
+        csv_file: The csv file containing the model responses.
+    """
     scores = {}
 
     exclude_list = [
@@ -355,6 +393,10 @@ def plot_heatmap(models: list[str], results_dir: str) -> pd.DataFrame:
     """Plot heatmap comparing LLMs’ behavior on bias types with their respective behavior on the set of perturbations.
 
     Blue indicates a positive effect, orange indicates a negative effect, hatched cells indicate non-significant change.
+
+    Args:
+        models: names of the models to process
+        results_dir: The directory containing model responses
     """
     clean_model_labels = list(models)
 
@@ -366,7 +408,7 @@ def plot_heatmap(models: list[str], results_dir: str) -> pd.DataFrame:
         bias_type = bias_types[i]
         values, p_value, keys = run_stat_test(
             bias_type,
-            f"{results_dir}/{model}/csv/{bias_type}.csv",  # TODO: fix this path
+            f"{results_dir}/{model}/csv/{bias_type}.csv",
         )
         lst = [model, clean_bias_labels[i], mean(values), p_value]
 
@@ -378,7 +420,7 @@ def plot_heatmap(models: list[str], results_dir: str) -> pd.DataFrame:
 
             values, p_value, keys = run_stat_test(
                 bias_type,
-                f"{results_dir}/{model}/csv/{bias_type}.csv",  # TODO: fix this path
+                f"{results_dir}/{model}/csv/{bias_type}.csv",
             )
             lst += [mean(values), p_value]
 
@@ -563,7 +605,12 @@ def plot_heatmap(models: list[str], results_dir: str) -> pd.DataFrame:
 
 
 def get_entropies(bias_type: str, pkl_file: str) -> tuple[float, float, float, float]:
-    """Get entropies."""
+    """Get entropies.
+
+    Args:
+        bias_type: one of ["acquiescence", "allow_forbid", "odd_even", "response_order", "opinion_float"]
+        pkl_file: The pickle file containing the model responses.
+    """
     first_group, second_group, _, _ = get_groups(bias_type)
 
     df = pd.read_pickle(pkl_file)
@@ -617,16 +664,19 @@ def get_entropies(bias_type: str, pkl_file: str) -> tuple[float, float, float, f
 
 
 def plot_uncertainity(models: list[str], results_dir: str) -> pd.DataFrame:
-    """Plot uncertainity."""
+    """Plot uncertainity.
+
+    Args:
+        models: names of the models to process
+        results_dir: The directory containing model responses
+    """
     clean_model_labels = list(models)
     all_results = []
-    # for model in models:
-    #     for i in range(len(bias_types)):
     for model, i in tqdm_itertools.product(models, range(len(bias_types))):
         bias_type = bias_types[i]
         orig_mean, orig_std, new_mean, new_std = get_entropies(
             bias_type,
-            f"{results_dir}/{model}/{bias_type}.pickle",  # TODO: fix this path
+            f"{results_dir}/{model}/{bias_type}.pickle",
         )
         lst = [model, bias_type, orig_mean, orig_std, new_mean, new_std]
         for perturbation in perturbations:
@@ -636,7 +686,7 @@ def plot_uncertainity(models: list[str], results_dir: str) -> pd.DataFrame:
                 bias_type = bias_types[i] + perturbation
             orig_mean, orig_std, new_mean, new_std = get_entropies(
                 bias_type,
-                f"{results_dir}/{model}/{bias_type}.pickle",  # TODO: fix this path
+                f"{results_dir}/{model}/{bias_type}.pickle",
             )
             lst += [new_mean, new_std]
         all_results.append(lst)
@@ -704,7 +754,12 @@ def plot_uncertainity(models: list[str], results_dir: str) -> pd.DataFrame:
 def get_indiv_entropies(
     bias_type: str, pickle_file: str
 ) -> tuple[list[str], list[float]]:
-    """Get individual entropies."""
+    """Get individual entropies.
+
+    Args:
+        bias_type: one of ["acquiescence", "allow_forbid", "odd_even", "response_order", "opinion_float"]
+        pickle_file: The pickle file containing the model responses.
+    """
     _, second_group, _, _ = get_groups(bias_type)
     df = pd.read_pickle(pickle_file)
 
@@ -741,14 +796,17 @@ def get_indiv_entropies(
 
 
 def get_pearsonr(models: list[str], results_dir: str) -> pd.DataFrame:
-    """Get Pearson correlation."""
+    """Get Pearson correlation coefficient and p-value.
+
+    Args:
+        models: names of the models to process
+        results_dir: The directory containing model responses
+    """
     all_results = []
-    # for i in range(len(models)):
-    #     for j in range(len(bias_types)):
     for model, bias_type in tqdm_itertools.product(models, bias_types):
         values, pvals, keys = run_stat_test(
             bias_type,
-            f"{results_dir}/{model}/csv/{bias_type}.csv",  # TODO: fix this path
+            f"{results_dir}/{model}/csv/{bias_type}.csv",
         )
         effect_sizes = {"keys": keys, "effects": values}
         df_effect = pd.DataFrame(effect_sizes)
@@ -756,7 +814,7 @@ def get_pearsonr(models: list[str], results_dir: str) -> pd.DataFrame:
 
         keys, values = get_indiv_entropies(
             bias_type,
-            f"{results_dir}/{model}/{bias_type}.pickle",  # TODO: fix this path
+            f"{results_dir}/{model}/{bias_type}.pickle",
         )
         entps = {"keys": keys, "entps": values}
         df_entps = pd.DataFrame(entps)
@@ -796,7 +854,13 @@ class PandasCSVReader:
 def compute_human_responses_distribution(
     prompts_csv: str, human_resp_dir: str, output_path: str
 ) -> pd.DataFrame:
-    """Get human responses."""
+    """Compute human responses distribution.
+
+    Args:
+        prompts_csv: The csv file containing the prompts.
+        human_resp_dir: The directory containing human responses.
+        output_path: The output file (pickle).
+    """
     df = pd.read_csv(prompts_csv)
     human_dist_df = pd.DataFrame(columns=["wave", "key", "distribution"])
     for index, row in df.iterrows():
@@ -844,7 +908,13 @@ def compute_human_responses_distribution(
 def compute_model_responses_distribution(
     human_dist: str, model_resp: str, output_path: str
 ) -> pd.DataFrame:
-    """Get model responses."""
+    """Compute model responses distribution.
+
+    Args:
+        human_dist: The pickle file containing the human responses distribution.
+        model_resp: The pickle file containing the model responses.
+        output_path: The output file (pickle).
+    """
     model_dist_df = pd.DataFrame(columns=["key", "distribution"])
     human_df = pd.read_pickle(human_dist)
     human_df["distribution"] = (
@@ -938,7 +1008,13 @@ def get_x_ord(num_item: int, bias_type: str) -> list[float]:
 def compute_wasserstein_distance(
     models: list[str], dist_dir: str, results_dir: str
 ) -> pd.DataFrame:
-    """Compute Wasserstein distance."""
+    """Compute Wasserstein distance between model and human responses.
+
+    Args:
+        models: names of the models to process
+        dist_dir: The directory containing the human and model distributions
+        results_dir: The directory containing model responses
+    """
     w_dists = []
     effect_lst = []
     for model, bias_type in tqdm_itertools.product(models, bias_types):
