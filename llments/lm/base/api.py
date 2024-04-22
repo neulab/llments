@@ -31,10 +31,12 @@ class APIBasedLM(LanguageModel):
     @abc.abstractmethod
     async def generate(
         self, 
-        temperature: float | None,
-        max_tokens: float | None,
-        n: int | None,
-        message: str | None
+        condition: str | None,
+        do_sample: bool = False,
+        max_length: int | None = None,
+        max_new_tokens: int | None = None,
+        temperature: float = 1.0,
+        num_return_sequences: int = 1
         ) -> ModelResponse:
         """Generate a response based on the given prompt.
         
@@ -55,8 +57,8 @@ class APIBasedLM(LanguageModel):
         response = await acompletion(
             model = self.model_name,
             temperature = temperature,
-            max_tokens = max_tokens,
-            n = n,
+            max_tokens = max_new_tokens,
+            n = num_return_sequences,
             messages=[{"content": message, "role": "user"}]
         )
         return response
@@ -64,13 +66,13 @@ class APIBasedLM(LanguageModel):
     @abc.abstractmethod
     def generate_batch(
         self,
+        messages: list[str],
         condition: str | None,
         do_sample: bool = False,
         max_length: int | None = None,
         max_new_tokens: int | None = None,
         temperature: float = 1.0,
-        num_return_sequences: int = 1,
-        messages: list[str]
+        num_return_sequences: int = 1
         ) -> list[ModelResponse]:
         """Generate responses to multiple prompts using the batch_completion function.
         
