@@ -63,12 +63,15 @@ class APIBasedLM(LanguageModel):
 
     @abc.abstractmethod
     def generate_batch(
-        self, 
-        temperature: float | None,
-        max_tokens: float | None,
-        n: int | None,
+        self,
+        condition: str | None,
+        do_sample: bool = False,
+        max_length: int | None = None,
+        max_new_tokens: int | None = None,
+        temperature: float = 1.0,
+        num_return_sequences: int = 1,
         messages: list[str]
-        ) -> list:
+        ) -> list[ModelResponse]:
         """Generate responses to multiple prompts using the batch_completion function.
         
         This method sends multiple prompts to the language model API and retrieves
@@ -86,8 +89,8 @@ class APIBasedLM(LanguageModel):
         responses = batch_completion(
             model = self.model_name,
             temperature = temperature,
-            max_tokens = max_tokens,
-            n = n,
+            max_tokens = max_new_tokens,
+            n = num_return_sequences,
             messages=[[{"content": content, "role": "user"}] for content in messages]
         )
         return responses
