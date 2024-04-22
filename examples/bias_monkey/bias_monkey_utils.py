@@ -1,5 +1,6 @@
 """This script uses LLMs to generate responses to survey questions."""
 
+import ast
 import csv
 import os
 import random
@@ -21,7 +22,6 @@ from tqdm import tqdm
 from tqdm.contrib import itertools as tqdm_itertools
 
 from llments.lm.lm import LanguageModel
-import ast
 
 bias_types = [
     "acquiescence",
@@ -793,71 +793,67 @@ class PandasCSVReader:
             return df
 
 
-def get_human_responses(
-    pew_categorized_csv: str, human_resp_dir: str, output_path: str
+def compute_human_responses_distribution(
+    prompts_csv: str, human_resp_dir: str, output_path: str
 ) -> pd.DataFrame:
     """Get human responses."""
-    df = pd.read_csv(pew_categorized_csv)
+    df = pd.read_csv(prompts_csv)
     human_dist_df = pd.DataFrame(columns=["wave", "key", "distribution"])
-
     for index, row in df.iterrows():
         key = row["key"]
-        wave = row["Wave"]
+        wave = key.split("_")[-1]
+        if not re.match(r"^W\d{2}$", wave):
+            continue
         if wave == "W53":
             wave = "W54"
-        if not pd.isna(wave):
-            wave_dir = f"{human_resp_dir}/American_Trends_Panel_{wave}"
-            human_df = PandasCSVReader.read(wave_dir + "/responses.csv")
-            info_df = PandasCSVReader.read(wave_dir + "/info.csv")
-            if type(info_df["references"][0]) == str:
-                info_df["references"] = (
-                    info_df["references"].fillna("[]").apply(lambda x: eval(x))
-                )
-            responses = list(human_df[key])
-            options = list(info_df[info_df["key"] == key].references)[0][
-                :-1
-            ]  # ignoring "Refused" option
-            alpha_responses = {}
-            for i in range(len(options)):
-                alpha_responses[string.ascii_lowercase[i]] = 0
-            for response in responses:
-                if response in options:
-                    i = options.index(response)
-                    count = alpha_responses[string.ascii_lowercase[i]]
-                    alpha_responses[string.ascii_lowercase[i]] = count + 1
-            total = sum(alpha_responses.values())
-            alpha_resp_norm = {a: alpha_responses[a] / total for a in alpha_responses}
-            question_row = pd.DataFrame(
-                {
-                    "wave": wave,
-                    "key": key,
-                    "distribution": str(alpha_resp_norm),
-                },
-                index=[0],
+        wave_dir = f"{human_resp_dir}/American_Trends_Panel_{wave}"
+        human_df = PandasCSVReader.read(wave_dir + "/responses.csv")
+        info_df = PandasCSVReader.read(wave_dir + "/info.csv")
+        if type(info_df["references"][0]) == str:
+            info_df["references"] = (
+                info_df["references"].fillna("[]").apply(lambda x: eval(x))
             )
-            human_dist_df = pd.concat([human_dist_df, question_row])
+        responses = list(human_df[key])
+        options = list(info_df[info_df["key"] == key].references)[0][
+            :-1
+        ]  # ignoring "Refused" option
+        alpha_responses = {}
+        for i in range(len(options)):
+            alpha_responses[string.ascii_lowercase[i]] = 0
+        for response in responses:
+            if response in options:
+                i = options.index(response)
+                count = alpha_responses[string.ascii_lowercase[i]]
+                alpha_responses[string.ascii_lowercase[i]] = count + 1
+        total = sum(alpha_responses.values())
+        alpha_resp_norm = {a: alpha_responses[a] / total for a in alpha_responses}
+        question_row = pd.DataFrame(
+            {
+                "wave": wave,
+                "key": key,
+                "distribution": str(alpha_resp_norm),
+            },
+            index=[0],
+        )
+        human_dist_df = pd.concat([human_dist_df, question_row])
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     human_dist_df.to_pickle(output_path)
     return human_dist_df
 
 
-def get_model_responses(
-    model: str, bias_type: str, human_dist_dir: str, results_dir: str, output_path: str
+def compute_model_responses_distribution(
+    human_dist: str, model_resp: str, output_path: str
 ) -> pd.DataFrame:
     """Get model responses."""
     model_dist_df = pd.DataFrame(columns=["key", "distribution"])
-    bias_file_name = bias_type
-    if bias_type == "odd_even":
-        bias_file_name = "odd_even-opinion_float"
-    human_df = pd.read_pickle(f"{human_dist_dir}/{bias_file_name}.pickle")
+    human_df = pd.read_pickle(human_dist)
     human_df["distribution"] = (
         human_df["distribution"].fillna("{}").apply(lambda x: eval(x))
     )
-    df = pd.read_pickle(f"{results_dir}/{model}/{bias_type}.pickle")
+    df = pd.read_pickle(model_resp)
 
-    if bias_type != "odd_even":
-        df = df[df["type"] == "orig alpha"]
-    else:
+    if "odd_even" in model_resp:
+        # odd_even.pickle doesn't have "orig alpha" type
         df_odd_even_opinion = pd.DataFrame(columns=["key", "responses"])
         for index, row in human_df.iterrows():
             key = row["key"]
@@ -881,6 +877,8 @@ def get_model_responses(
             )
             df_odd_even_opinion = pd.concat([df_odd_even_opinion, question_row])
         df = df_odd_even_opinion
+    else:
+        df = df[df["type"] == "orig alpha"]
 
     invalid = 0
     for index, row in df.iterrows():
@@ -950,13 +948,8 @@ def compute_wasserstein_distance(
         for score, key in zip(scores, keys):
             effect_lst.append([key, bias_type, model, score / 50.0])
 
-        new_bias_type = "odd_even" if bias_type == "opinion_float" else bias_type
-        model_df = pd.read_pickle(f"{dist_dir}/{model}_dist/{new_bias_type}.pickle")
-
-        new_bias_type = (
-            "odd_even-opinion_float" if new_bias_type == "odd_even" else new_bias_type
-        )
-        human_df = pd.read_pickle(f"{dist_dir}/human_dist/{new_bias_type}.pickle")
+        model_df = pd.read_pickle(f"{dist_dir}/{model}_dist/{bias_type}.pickle")
+        human_df = pd.read_pickle(f"{dist_dir}/human_dist/{bias_type}.pickle")
 
         comb_df = pd.merge(model_df, human_df, on="key")
         for key in comb_df["key"]:
