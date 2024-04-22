@@ -27,7 +27,7 @@ class HuggingFaceLM(LanguageModel):
                         if the standard cache should not be used.
         """
         try:
-            from transformers import AutoTokenizer, AutoModelForCausalLM
+            from transformers import AutoModelForCausalLM, AutoTokenizer
         except ImportError:
             raise ImportError(
                 "You need to install the `transformers` package to use this class."
@@ -83,7 +83,10 @@ class HuggingFaceLM(LanguageModel):
             str: A sampled output sequence from the language model.
         """
         inputs = self.tokenizer(
-            condition, return_tensors="pt", truncation=True, max_length=max_length
+            condition,
+            return_tensors="pt",
+            truncation=max_length is not None,
+            max_length=max_length,
         ).to(self.device)
         outputs = self.model.generate(
             **inputs,
@@ -134,12 +137,12 @@ class HuggingFaceLM(LanguageModel):
         Returns:
             list[list[dict[str, str]]]: list of chat contexts with the generated responses.
         """
-        chat_context = ""
-        for message in messages:
-            chat_context += f'{message["role"]}: {message["content"]}\n'
-
-        inputs = self.tokenizer.encode(
-            chat_context, return_tensors="pt", truncation=True, max_length=max_length
+        inputs = self.tokenizer.apply_chat_template(
+            messages,
+            add_generation_prompt=True,
+            return_tensors="pt",
+            max_length=max_length,
+            truncation=max_length is not None,
         )
         inputs = inputs.to(self.device)
 
@@ -152,9 +155,12 @@ class HuggingFaceLM(LanguageModel):
             do_sample=do_sample,
         )
 
-        return [
-            self.tokenizer.decode(g, skip_special_tokens=True) for g in generated_tokens
+        prompt_length = len(self.tokenizer.decode(inputs[0], skip_special_tokens=True))
+        respones = [
+            self.tokenizer.decode(g, skip_special_tokens=True)[prompt_length:]
+            for g in generated_tokens
         ]
+        return [messages + [{"role": "assistant", "content": r}] for r in respones]
 
     def set_seed(self, seed: int) -> None:
         """Set the seed for the language model.
@@ -236,12 +242,12 @@ class HuggingFaceLMFitter:
             The fitted language model.
         """
         try:
-            from transformers import (
-                TrainingArguments,
-                Trainer,
-                DataCollatorForLanguageModeling,
-            )
             from datasets import Dataset
+            from transformers import (
+                DataCollatorForLanguageModeling,
+                Trainer,
+                TrainingArguments,
+            )
         except ImportError:
             raise ImportError(
                 "You need to install 'transformers' and 'torch' packages to use this "
