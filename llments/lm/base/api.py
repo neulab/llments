@@ -31,13 +31,13 @@ class APIBasedLM(LanguageModel):
     @abc.abstractmethod
     def generate(
         self, 
-        message: str,
         condition: str | None,
         do_sample: bool = False,
         max_length: int | None = None,
         max_new_tokens: int | None = None,
         temperature: float = 1.0,
-        num_return_sequences: int = 1
+        num_return_sequences: int = 1,
+        message: str
         ) -> list[str]:
         """Generate a response based on the given prompt.
         
@@ -53,7 +53,7 @@ class APIBasedLM(LanguageModel):
             do_sample (bool): Whether to use sampling or greedy decoding.
             max_length (int): The maximum length of the output sequence,
                 (defaults to model max).
-            max_tokens (float): The maximum number of tokens to generate in the chat completion.
+            max_new_tokens (float): The maximum number of tokens to generate in the chat completion.
             temperature (float): The sampling temperature to be used, between 0 and 2. 
             num_return_sequences (int): The number of chat completion choices to generate for each input message.
             
@@ -75,13 +75,13 @@ class APIBasedLM(LanguageModel):
     @abc.abstractmethod
     def generate_batch(
         self,
-        messages: list[str],
         condition: str | None,
         do_sample: bool = False,
         max_length: int | None = None,
         max_new_tokens: int | None = None,
         temperature: float = 1.0,
-        num_return_sequences: int = 1
+        num_return_sequences: int = 1,
+        messages: list[str]
         ) -> list[str]:
         """Generate responses to multiple prompts using the batch_completion function.
         
@@ -89,13 +89,13 @@ class APIBasedLM(LanguageModel):
         the generated response for each of the prompts.
         
         Args:
-            message (str): The prompt for generating a response.
+            messages (list[str]): List of prompts for generating responses.
             condition (str): The conditioning sequence for the output.
                 If None, the output is not conditioned.
             do_sample (bool): Whether to use sampling or greedy decoding.
             max_length (int): The maximum length of the output sequence,
                 (defaults to model max).
-            max_tokens (float): The maximum number of tokens to generate in the chat completion.
+            max_new_tokens (float): The maximum number of tokens to generate in the chat completion.
             temperature (float): The sampling temperature to be used, between 0 and 2. 
             num_return_sequences (int): The number of chat completion choices to generate for each input message.
             
