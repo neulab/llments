@@ -31,13 +31,13 @@ class APIBasedLM(LanguageModel):
     @abc.abstractmethod
     def generate(
         self, 
+        message: str,
         condition: str | None,
         do_sample: bool = False,
         max_length: int | None = None,
         max_new_tokens: int | None = None,
         temperature: float = 1.0,
-        num_return_sequences: int = 1,
-        message: str
+        num_return_sequences: int = 1
         ) -> list[str]:
         """Generate a response based on the given prompt.
         
@@ -75,13 +75,13 @@ class APIBasedLM(LanguageModel):
     @abc.abstractmethod
     def generate_batch(
         self,
+        messages: list[str],
         condition: str | None,
         do_sample: bool = False,
         max_length: int | None = None,
         max_new_tokens: int | None = None,
         temperature: float = 1.0,
-        num_return_sequences: int = 1,
-        messages: list[str]
+        num_return_sequences: int = 1
         ) -> list[str]:
         """Generate responses to multiple prompts using the batch_completion function.
         
