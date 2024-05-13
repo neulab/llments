@@ -201,6 +201,7 @@ class HuggingFaceLMFitter:
         cls,
         base: HuggingFaceLM,
         target: LanguageModel,
+        eval_target: LanguageModel | None = None,
         batch_size: int = 8,  # batch size per device
         training_steps: int = 200,
         output_dir: str = "./training_results",  # ie. checkpoint_dir
@@ -221,6 +222,7 @@ class HuggingFaceLMFitter:
         Args:
             base: The HF language model to fine-tune.
             target: The language model that should be fitted to.
+            eval_target: The language model used to evaluate the training process.
             batch_size: The batch size per GPU/XPU/TPU/MPS/NPU core/CPU for training and evaluation.
             training_steps: Number of training steps.
             training_epochs: Number of iterations to go through the entire dataset.
@@ -270,6 +272,18 @@ class HuggingFaceLMFitter:
 
         # convert tokenized text into a Dataset object
         dataset = Dataset.from_dict(inputs)
+        if eval_target:
+            eval_samples = eval_target.generate(
+                condition=None,
+                do_sample=True,
+                temperature=1.0,
+                num_return_sequences=batch_size * training_steps,
+            )
+
+            eval_inputs = base.tokenizer(
+                eval_samples, padding=True, truncation=True, return_tensors="pt"
+            )
+            eval_dataset = Dataset.from_dict(eval_inputs)
 
         training_args = TrainingArguments(
             output_dir=output_dir,
@@ -295,14 +309,25 @@ class HuggingFaceLMFitter:
         if not os.path.exists(logging_dir):
             os.makedirs(logging_dir)
 
-        trainer = Trainer(
-            model=base.model,
-            args=training_args,
-            data_collator=DataCollatorForLanguageModeling(
-                tokenizer=base.tokenizer, mlm=False
-            ),
-            train_dataset=dataset,
-        )
+        if not do_eval:
+            trainer = Trainer(
+                model=base.model,
+                args=training_args,
+                data_collator=DataCollatorForLanguageModeling(
+                    tokenizer=base.tokenizer, mlm=False
+                ),
+                train_dataset=dataset,
+            )
+        else:
+            trainer = Trainer(
+                model=base.model,
+                args=training_args,
+                data_collator=DataCollatorForLanguageModeling(
+                    tokenizer=base.tokenizer, mlm=False
+                ),
+                train_dataset=dataset,
+                eval_dataset=eval_dataset,
+            )
 
         trainer.train()
         base.tokenizer.save_pretrained(output_dir)
