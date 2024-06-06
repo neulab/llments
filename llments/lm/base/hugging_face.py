@@ -177,7 +177,7 @@ class HuggingFaceLM(LanguageModel):
         set_seed(seed)
 
     def calculate_probability(self, condition: str | None, output: str) -> float:
-        """Calculate the probability of an output given the language model.
+        """Calculate the joint probability of an output given the language model and conditioning sequence.
 
         Args:
             condition: The conditioning sequence for the output.
@@ -186,7 +186,33 @@ class HuggingFaceLM(LanguageModel):
         Returns:
             float: The probability of output x given the language model.
         """
-        raise NotImplementedError
+        full_text = (condition + " " if condition else "") + output
+        inputs = self.tokenizer(full_text, return_tensors="pt")
+        inputs = inputs.to(self.device)
+
+        # Process input through the model to get logits
+        outputs = self.model(**inputs)
+        logits = outputs.logits
+
+        try:
+            import numpy as np
+        except ImportError:
+            raise ImportError(
+                "You need to install `numpy` package to use this function."
+            )
+        # Calculate softmax: convert logits to probabilities
+        logits_sum = np.sum(
+            np.exp(logits.detach().cpu().numpy()), axis=-1, keepdims=True
+        )
+        probs = np.exp(logits.detach().cpu().numpy()) / logits_sum
+
+        # Get probabilities for the output tokens
+        output_token_ids = self.tokenizer(output, add_special_tokens=False).input_ids
+        output_probabilities = [
+            probs[0, idx, token_id] for idx, token_id in enumerate(output_token_ids)
+        ]
+
+        return float(np.prod(output_probabilities))
 
 
 class HuggingFaceLMFitter:
