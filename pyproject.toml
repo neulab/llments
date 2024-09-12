@@ -39,3 +39,6 @@ select = ["D"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"*.ipynb" = ["D103", "D200", "D212"]
