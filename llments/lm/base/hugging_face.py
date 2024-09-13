@@ -216,6 +216,8 @@ class HuggingFaceLMFitter:
         prediction_loss_only: bool = False,
         optim: str = "adamw_torch",
         logging_steps: int = 500,
+        lora_r: int | None = None,
+        lora_alpha: int | None = None,
     ) -> LanguageModel:
         """Fit the language model to a target language model's distribution.
 
@@ -239,6 +241,8 @@ class HuggingFaceLMFitter:
             prediction_loss_only: When performing evaluation and generating predictions, only returns the loss.
             optim: The optimizer to use. Can only choose from a list of names.
             logging_steps: Number of update steps between two logs if logging_strategy="steps".
+            lora_r: Lora attention dimension (the “rank”).
+            lora_alpha: The alpha parameter for Lora scaling.
 
         Returns:
             The fitted language model.
@@ -284,6 +288,30 @@ class HuggingFaceLMFitter:
                 eval_samples, padding=True, truncation=True, return_tensors="pt"
             )
             eval_dataset = Dataset.from_dict(eval_inputs)
+
+        # wrap the base model with peft
+        if lora_r and lora_alpha:
+            try:
+                from peft import (
+                    LoraConfig,
+                    get_peft_model,
+                    prepare_model_for_kbit_training,
+                )
+            except ImportError:
+                raise ImportError(
+                    "You need to install 'peft' package to use this LORA functionality."
+                )
+            lora_config = LoraConfig(
+                r=lora_r,
+                lora_alpha=lora_alpha,
+                # trainable layers: all linear layers between multihead attention
+                target_modules=["q_proj", "k_proj", "v_proj", "out_proj"],
+                lora_dropout=0.05,
+                bias="none",
+                task_type="CAUSAL_LM",
+            )
+            model = prepare_model_for_kbit_training(base.model)
+            base.model = get_peft_model(model, lora_config)
 
         training_args = TrainingArguments(
             output_dir=output_dir,
