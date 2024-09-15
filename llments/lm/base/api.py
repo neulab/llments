@@ -47,7 +47,7 @@ class APIBasedLM():
     def generate(
         self,
         message: str,
-        base_url: str | None,
+        api_base: str | None,
         condition: str | None,
         do_sample: bool = False,
         max_length: int | None = None,
@@ -62,6 +62,7 @@ class APIBasedLM():
 
         Args:
             message (str): The prompt for generating a response.
+            api_base (str): The API endpoint to call the model.
             condition (str): The conditioning sequence for the output.
                 If None, the output is not conditioned.
             do_sample (bool): Whether to use sampling or greedy decoding.
@@ -87,7 +88,7 @@ class APIBasedLM():
             temperature = temperature,
             max_tokens = max_new_tokens,
             n = num_return_sequences,
-            base_url = base_url,
+            api_base = api_base,
             messages=[{"content": message, "role": "user"}]
         )
         for choice in response['choices']:
@@ -98,7 +99,7 @@ class APIBasedLM():
     def chat_generate(
         self,
         messages: list[str],
-        base_url: str | None,
+        api_base: str | None,
         condition: str | None,
         do_sample: bool = False,
         max_length: int | None = None,
@@ -113,6 +114,7 @@ class APIBasedLM():
 
         Args:
             messages (list): The list of prompts for generating responses.
+            api_base (str): The API endpoint to call the model.
             condition (str): The conditioning sequence for the output.
                 If None, the output is not conditioned.
             do_sample (bool): Whether to use sampling or greedy decoding.
@@ -137,7 +139,7 @@ class APIBasedLM():
             temperature = temperature,
             max_tokens = max_new_tokens,
             n = num_return_sequences,
-            base_url = base_url,
+            api_base = api_base,
             messages=[[{"content": content, "role": "user"}] for content in messages]
         )
         return [response['choices'][0]['message']['content'] for response in responses]
