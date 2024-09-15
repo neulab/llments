@@ -47,6 +47,7 @@ class APIBasedLM():
     def generate(
         self,
         message: str,
+        base_url: str | None,
         condition: str | None,
         do_sample: bool = False,
         max_length: int | None = None,
@@ -86,6 +87,7 @@ class APIBasedLM():
             temperature = temperature,
             max_tokens = max_new_tokens,
             n = num_return_sequences,
+            base_url = base_url,
             messages=[{"content": message, "role": "user"}]
         )
         for choice in response['choices']:
@@ -96,6 +98,7 @@ class APIBasedLM():
     def chat_generate(
         self,
         messages: list[str],
+        base_url: str | None,
         condition: str | None,
         do_sample: bool = False,
         max_length: int | None = None,
@@ -134,6 +137,7 @@ class APIBasedLM():
             temperature = temperature,
             max_tokens = max_new_tokens,
             n = num_return_sequences,
+            base_url = base_url,
             messages=[[{"content": content, "role": "user"}] for content in messages]
         )
         return [response['choices'][0]['message']['content'] for response in responses]
