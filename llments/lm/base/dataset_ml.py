@@ -100,17 +100,20 @@ class DatasetLM(LanguageModel):
         raise NotImplementedError("This is not implemented yet.")
 
     def calculate_probability(self, condition: str | None, output: str) -> float:
-        """Calculate the probability of an output given the language model.
+        """Calculate the probability of a given text sequence in the empirical distribution.
 
         Args:
-            condition: The conditioning sequence for the output.
-            output: The output sequence for which the probability is calculated.
+            condition: conditioning text, but in DatasetML it's defaulted as None.
+            output: The text sequence for which to calculate the probability.
 
         Returns:
-            float: The probability of output x given the language model.
+             float: The probability of the sequence if it exists in the dataset, otherwise 0.
         """
-        # Implementation logic
-        raise NotImplementedError("This is not implemented yet.")
+        result = self.data[self.data["text"] == output]["prob"]
+        if not result.empty:
+            return float(result.iloc[0])
+        else:
+            return 0.0
 
     def set_seed(self, seed: int) -> None:
         """Set the seed for the language model.
