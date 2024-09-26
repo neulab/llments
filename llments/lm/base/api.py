@@ -1,10 +1,13 @@
 """Base class for API-Based Language Models."""
 
-import os
 import abc
+import os
 import warnings
+
+from litellm import ModelResponse, batch_completion, completion
+
 from llments.lm.lm import LanguageModel
-from litellm import completion, batch_completion, ModelResponse
+
 
 class APIBasedLM(LanguageModel):
     """Base class for API-Based Language Models.
@@ -54,8 +57,8 @@ class APIBasedLM(LanguageModel):
         max_length: int | None = None,
         max_new_tokens: int | None = None,
         temperature: float = 1.0,
-        num_return_sequences: int = 1
-        ) -> list[str]:
+        num_return_sequences: int = 1,
+    ) -> list[str]:
         """Generate a response based on the given prompt.
 
         This method sends a prompt to the language model API and retrieves
@@ -68,30 +71,36 @@ class APIBasedLM(LanguageModel):
             max_length (int): The maximum length of the output sequence,
                 (defaults to model max).
             max_new_tokens (float): The maximum number of tokens to generate in the chat completion.
-            temperature (float): The sampling temperature to be used, between 0 and 2. 
+            temperature (float): The sampling temperature to be used, between 0 and 2.
             num_return_sequences (int): The number of chat completion choices to generate for each input message.
 
         Returns:
             str: Sampled output sequences from the language model.
         """
         if condition is not None:
-            warnings.warn("A non-default value for 'condition' was provided.", UserWarning)
+            warnings.warn(
+                "A non-default value for 'condition' was provided.", UserWarning
+            )
         if do_sample:
-            warnings.warn("A non-default value for 'do_sample' was provided.", UserWarning)
+            warnings.warn(
+                "A non-default value for 'do_sample' was provided.", UserWarning
+            )
         if max_length is not None:
-            warnings.warn("A non-default value for 'max_length' was provided.", UserWarning)
-            
+            warnings.warn(
+                "A non-default value for 'max_length' was provided.", UserWarning
+            )
+
         responses = []
         response = completion(
-            model = self.model_name,
-            temperature = temperature,
-            max_tokens = max_new_tokens,
-            n = num_return_sequences,
-            api_base = self.api_base,
-            messages=[{"content": condition, "role": "user"}]
+            model=self.model_name,
+            temperature=temperature,
+            max_tokens=max_new_tokens,
+            n=num_return_sequences,
+            api_base=self.api_base,
+            messages=[{"content": condition, "role": "user"}],
         )
-        for choice in response['choices']:
-            responses.append(choice['message']['content'])
+        for choice in response["choices"]:
+            responses.append(choice["message"]["content"])
         return responses
 
     @abc.abstractmethod
@@ -102,8 +111,8 @@ class APIBasedLM(LanguageModel):
         max_length: int | None = None,
         max_new_tokens: int | None = None,
         temperature: float = 1.0,
-        num_return_sequences: int = 1
-        ) -> list[list[dict[str, str]]]:
+        num_return_sequences: int = 1,
+    ) -> list[list[dict[str, str]]]:
         """Generate responses to multiple prompts using the batch_completion function.
 
         This method sends multiple prompts to the language model API and retrieves
@@ -127,27 +136,32 @@ class APIBasedLM(LanguageModel):
             max_length (int): The maximum length of the output sequence,
                 (defaults to model max).
             max_new_tokens (float): The maximum number of tokens to generate in the chat completion.
-            temperature (float): The sampling temperature to be used, between 0 and 2. 
+            temperature (float): The sampling temperature to be used, between 0 and 2.
             num_return_sequences (int): The number of chat completion choices to generate for each input message.
 
         Returns:
             list[list[dict[str, str]]]: list of chat contexts with the generated responses.
         """
         if do_sample:
-            warnings.warn("A non-default value for 'do_sample' was provided.", UserWarning)
+            warnings.warn(
+                "A non-default value for 'do_sample' was provided.", UserWarning
+            )
         if max_length is not None:
-            warnings.warn("A non-default value for 'max_length' was provided.", UserWarning)
-            
+            warnings.warn(
+                "A non-default value for 'max_length' was provided.", UserWarning
+            )
+
         responses = batch_completion(
-            model = self.model_name,
-            temperature = temperature,
-            max_tokens = max_new_tokens,
-            n = num_return_sequences,
-            api_base = self.api_base,
-            messages=messages
+            model=self.model_name,
+            temperature=temperature,
+            max_tokens=max_new_tokens,
+            n=num_return_sequences,
+            api_base=self.api_base,
+            messages=[messages],
         )
+        responses = [r["message"]["content"] for r in responses[0]["choices"]]
         return [messages + [{"role": "assistant", "content": r}] for r in responses]
-      
+
     @abc.abstractmethod
     def set_seed(self, seed: int) -> None:
         """Set the seed for the language model.
