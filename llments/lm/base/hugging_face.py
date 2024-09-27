@@ -33,29 +33,36 @@ class HuggingFaceLM(LanguageModel):
                 "You need to install the `transformers` package to use this class."
             )
 
-        if not ".ckpt" in model:  # use the same tokenizer as the model
+        # load model
+        self.model = AutoModelForCausalLM.from_pretrained(
+            model,
+            do_sample=True,
+            use_cache=True,
+            cache_dir=cache_dir,
+            from_tf=bool(".ckpt" in model),
+        )
+
+        # load tokenizer
+        if tokenizer_path is not None:
+            try:
+                self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
+            except:
+                raise ValueError(
+                    "You must create model from one of the following ways: \n"
+                    + "1. Input a pretrained HF model name, and optionally the compatible tokenizer path. \n"
+                    + "2. Load model from a checkpoint file, include tokenizer path as well. \n"
+                )
+        else:
             self.tokenizer = AutoTokenizer.from_pretrained(
                 model, trust_remote_code=True
             )
-            self.model = AutoModelForCausalLM.from_pretrained(
-                model, do_sample=True, use_cache=True, cache_dir=cache_dir
-            )
-            self.device = device or "cpu"
-            self.model.to(self.device)
-        elif ".ckpt" in model and tokenizer_path is not None:  # load from checkpoint
-            tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
-            if not tokenizer.pad_token:
-                tokenizer.pad_token = tokenizer.eos_token
-            self.tokenizer = tokenizer
-            self.model = AutoModelForCausalLM.from_pretrained(
-                model, from_tf=bool(".ckpt" in model)
-            )
-        else:
-            raise ValueError(
-                "You must create model from one of the following ways: \n"
-                + "1. Input HF model name.\n"
-                + "2. Load model from a checkpoint file, include tokenizer path as well."
-            )
+
+        if not self.tokenizer.pad_token:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+
+        # set device
+        self.device = device or "cpu"
+        self.model.to(self.device)
 
     def generate(
         self,
@@ -216,6 +223,7 @@ class HuggingFaceLMFitter:
         prediction_loss_only: bool = False,
         optim: str = "adamw_torch",
         logging_steps: int = 500,
+        save_steps: int = 500,
         lora_r: int | None = None,
         lora_alpha: int | None = None,
     ) -> LanguageModel:
@@ -241,6 +249,7 @@ class HuggingFaceLMFitter:
             prediction_loss_only: When performing evaluation and generating predictions, only returns the loss.
             optim: The optimizer to use. Can only choose from a list of names.
             logging_steps: Number of update steps between two logs if logging_strategy="steps".
+            save_steps: Number of updates steps between two checkpoints.
             lora_r: Lora attention dimension (the “rank”).
             lora_alpha: The alpha parameter for Lora scaling.
 
@@ -276,6 +285,8 @@ class HuggingFaceLMFitter:
 
         # convert tokenized text into a Dataset object
         dataset = Dataset.from_dict(inputs)
+        print("Dataset LM for training prepared!")
+
         if eval_target:
             eval_samples = eval_target.generate(
                 condition=None,
@@ -288,9 +299,11 @@ class HuggingFaceLMFitter:
                 eval_samples, padding=True, truncation=True, return_tensors="pt"
             )
             eval_dataset = Dataset.from_dict(eval_inputs)
+            print("Dataset LM for evaluation prepared!")
 
         # wrap the base model with peft
         if lora_r and lora_alpha:
+            print("Using LORA attention for fitting.")
             try:
                 from peft import (
                     LoraConfig,
@@ -329,6 +342,7 @@ class HuggingFaceLMFitter:
             prediction_loss_only=prediction_loss_only,
             logging_dir=logging_dir,
             logging_steps=logging_steps,
+            save_steps=save_steps,
         )
 
         # Make output_dir and logging_dir
@@ -337,6 +351,7 @@ class HuggingFaceLMFitter:
         if not os.path.exists(logging_dir):
             os.makedirs(logging_dir)
 
+        print("Start fitting...")
         if not do_eval:
             trainer = Trainer(
                 model=base.model,
@@ -360,6 +375,7 @@ class HuggingFaceLMFitter:
         trainer.train()
         base.tokenizer.save_pretrained(output_dir)
         trainer.save_model(output_dir)
+        print("fitted modes saved to", output_dir)
 
         return base
 
