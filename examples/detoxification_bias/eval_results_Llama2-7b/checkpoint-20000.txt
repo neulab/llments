@@ -1,0 +1,4 @@
+nontoxic_aae.txt: 67.86184747351325
+nontoxic_wae.txt: 31.27768641379288
+toxic_aae.txt: 81.90585738545141
+toxic_wae.txt: 35.637521834613224
