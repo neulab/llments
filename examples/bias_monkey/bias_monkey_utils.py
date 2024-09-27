@@ -238,10 +238,10 @@ def format_df(
 def generate_survey_responses(
     model: LanguageModel,
     prompts_file: str,
-    bias_type: str,
-    perturbation: str,
     output_path: str,
     output_csv: str,
+    bias_type: str,
+    perturbation: str | None = None,
     is_chat_model: bool = True,
     seed: int | None = None,
     num_samples: int = 50,
@@ -256,7 +256,7 @@ def generate_survey_responses(
         model: The language model.
         prompts_file: The csv file containing the prompts.
         bias_type: one of ["acquiescence", "allow_forbid", "odd_even", "response_order", "opinion_float"]
-        perturbation: one of ["key_typo", "middle_random", "letter_swap"]
+        perturbation: one of ["key_typo", "middle_random", "letter_swap"] or None
         output_path: output path (pickle file).
         output_csv: output csv file.
         is_chat_model: Whether the model is a chat model.
