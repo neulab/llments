@@ -1,0 +1,44 @@
+[I 2024-04-16 23:19:31.959 ServerApp] jupyter_lsp | extension was successfully linked.
+[I 2024-04-16 23:19:31.962 ServerApp] jupyter_server_terminals | extension was successfully linked.
+[I 2024-04-16 23:19:31.965 ServerApp] jupyterlab | extension was successfully linked.
+[I 2024-04-16 23:19:31.968 ServerApp] notebook | extension was successfully linked.
+[I 2024-04-16 23:19:32.522 ServerApp] notebook_shim | extension was successfully linked.
+[I 2024-04-16 23:19:33.841 ServerApp] notebook_shim | extension was successfully loaded.
+[I 2024-04-16 23:19:33.842 ServerApp] jupyter_lsp | extension was successfully loaded.
+[I 2024-04-16 23:19:33.843 ServerApp] jupyter_server_terminals | extension was successfully loaded.
+[I 2024-04-16 23:19:33.854 LabApp] JupyterLab extension loaded from /home/mihirban/miniconda3/lib/python3.11/site-packages/jupyterlab
+[I 2024-04-16 23:19:33.854 LabApp] JupyterLab application directory is /home/mihirban/miniconda3/share/jupyter/lab
+[I 2024-04-16 23:19:33.854 LabApp] Extension Manager is 'pypi'.
+[I 2024-04-16 23:19:33.864 ServerApp] jupyterlab | extension was successfully loaded.
+[I 2024-04-16 23:19:33.867 ServerApp] notebook | extension was successfully loaded.
+[I 2024-04-16 23:19:33.867 ServerApp] Serving notebooks from local directory: /home/mihirban/llments
+[I 2024-04-16 23:19:33.867 ServerApp] Jupyter Server 2.13.0 is running at:
+[I 2024-04-16 23:19:33.867 ServerApp] http://inst-0-35:8888/tree?token=0a1ff6052f152a63d7b457e2e8d65873884ece1384c55b95
+[I 2024-04-16 23:19:33.867 ServerApp]     http://127.0.0.1:8888/tree?token=0a1ff6052f152a63d7b457e2e8d65873884ece1384c55b95
+[I 2024-04-16 23:19:33.867 ServerApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+[C 2024-04-16 23:19:33.872 ServerApp] 
+    
+    To access the server, open this file in a browser:
+        file:///home/mihirban/.local/share/jupyter/runtime/jpserver-1365992-open.html
+    Or copy and paste one of these URLs:
+        http://inst-0-35:8888/tree?token=0a1ff6052f152a63d7b457e2e8d65873884ece1384c55b95
+        http://127.0.0.1:8888/tree?token=0a1ff6052f152a63d7b457e2e8d65873884ece1384c55b95
+[I 2024-04-16 23:19:33.890 ServerApp] Skipped non-installed server(s): bash-language-server, dockerfile-language-server-nodejs, javascript-typescript-langserver, jedi-language-server, julia-language-server, pyright, python-language-server, python-lsp-server, r-languageserver, sql-language-server, texlab, typescript-language-server, unified-language-server, vscode-css-languageserver-bin, vscode-html-languageserver-bin, vscode-json-languageserver-bin, yaml-language-server
+[W 2024-04-16 23:20:44.960 ServerApp] 404 GET /hub/api (@172.16.1.5) 259.95ms referer=None
+[I 2024-04-16 23:20:44.962 JupyterNotebookApp] 302 GET /tree? (@172.16.1.5) 0.42ms
+[W 2024-04-16 23:20:46.658 ServerApp] 404 GET /hub/api (@172.16.1.5) 1.15ms referer=None
+[I 2024-04-16 23:20:46.660 JupyterNotebookApp] 302 GET /tree? (@172.16.1.5) 0.29ms
+[W 2024-04-16 23:20:53.855 ServerApp] 404 GET /hub/api (@172.16.1.5) 1.09ms referer=None
+[I 2024-04-16 23:20:53.857 JupyterNotebookApp] 302 GET /tree? (@172.16.1.5) 0.26ms
+[I 2024-04-16 23:20:53.892 ServerApp] Kernel started: b3b1d864-5388-43aa-bca3-8e1e14b31926
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 2024-04-16 23:20:54.845 ServerApp] Connecting to kernel b3b1d864-5388-43aa-bca3-8e1e14b31926.
+[W 2024-04-16 23:20:55.764 ServerApp] 404 GET /hub/api (@172.16.1.5) 0.93ms referer=None
+[W 2024-04-16 23:20:55.764 ServerApp] 404 GET /nbextensions/jupyter-js-widgets/extension.js (@172.16.1.5) 1.17ms referer=None
+[I 2024-04-16 23:20:55.766 JupyterNotebookApp] 302 GET /tree? (@172.16.1.5) 0.23ms
+[W 2024-04-16 23:20:55.768 ServerApp] 404 GET /nbextensions/jupyter-js-widgets/extension.js (@172.16.1.5) 0.50ms referer=None
+[I 2024-04-17 02:14:16.331 ServerApp] Kernel interrupted: b3b1d864-5388-43aa-bca3-8e1e14b31926
+slurmstepd: error: *** JOB 233638 ON inst-0-35 CANCELLED AT 2024-04-17T02:14:54 ***
