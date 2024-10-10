@@ -3,7 +3,7 @@
 import os
 import tqdm
 from pathlib import Path
-from examples.community_lm.community_lm_constants import anes_df
+from community_lm_constants import anes_df
 import pandas as pd
 import numpy as np
 
