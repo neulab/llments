@@ -184,7 +184,7 @@ class HuggingFaceLM(LanguageModel):
         set_seed(seed)
 
     def calculate_probability(self, condition: str | None, output: str) -> float:
-        """Calculate the probability of an output given the language model.
+        """Calculate the log probability of an output given the language model.
 
         Args:
             condition: The conditioning sequence for the output.
@@ -193,7 +193,150 @@ class HuggingFaceLM(LanguageModel):
         Returns:
             float: The probability of output x given the language model.
         """
-        raise NotImplementedError
+        try:
+            import numpy as np
+        except ImportError:
+            raise ImportError(
+                "You need to install 'numpy' package to use this function."
+            )
+
+        if condition:
+            full_input = condition + " " + output
+        else:
+            full_input = output
+
+        # Tokenize the full input (condition + output or just output)
+        inputs = self.tokenizer(
+            full_input,
+            return_tensors="pt",
+            truncation=True,
+            padding=False,  # Avoid padding unless needed
+        )
+
+        # Get model outputs (logits)
+        full_outputs = self.model(**inputs, return_dict=True)
+        logits = (
+            full_outputs.logits.detach().cpu().numpy()
+        )  # Convert logits to NumPy array
+        full_input_ids = inputs["input_ids"][0].cpu().numpy()
+
+        # define a softmax function
+        def softmax(logits: np.ndarray) -> np.ndarray:
+            exps = np.exp(
+                logits - np.max(logits, axis=-1, keepdims=True)
+            )  # Stabilize softmax
+            return exps / np.sum(exps, axis=-1, keepdims=True)
+
+        # Calculate the probability of the output
+        probs = softmax(logits[0])  # Only one sequence in the batch
+        probs = probs[:-1, :]
+
+        # calculate the num of tokens corresponding to the output
+        output_ids = self.tokenizer(output)["input_ids"]
+        output_ids = output_ids[1:]
+        full_input_ids = full_input_ids[1:]
+        start_idx = len(full_input_ids) - len(output_ids)
+
+        # take the last # of output_tokens from the log_probs
+        log_probs = np.log(probs[np.arange(start_idx, len(full_input_ids)), output_ids])
+
+        # convert the log_probs to a float
+        return float(np.sum(log_probs))
+
+    def calculate_perplexity(self, condition: str | None, output: str) -> float:
+        """Calculate the perplexity of an output given the language model.
+
+        Args:
+            condition: The conditioning sequence for the output.
+            output: The output sequence for which the probability is calculated.
+
+        Returns:
+            float: The perplexity of output x given the language model.
+        """
+        try:
+            import numpy as np
+        except ImportError:
+            raise ImportError(
+                "You need to install 'numpy' package to use this function."
+            )
+
+        log_prob = self.calculate_probability(condition, output)
+        num_tokens = len(self.tokenizer(output)["input_ids"]) - 1
+
+        return float(np.exp(-log_prob / num_tokens))
+
+    def calculate_perplexity_batch(
+        self, condition: list[str] | None, outputs: list[str]
+    ) -> float:
+        """Calculate the perplexity of multiple outputs given the language model.
+
+        Args:
+            condition: The conditioning sequence for the output.
+            outputs: The output sequences for which the probability is calculated.
+
+        Returns:
+            list[float]: The perplexity of outputs given the language model.
+        """
+        if condition:
+            full_inputs = [c + " " + o for c, o in zip(condition, outputs)]
+        else:
+            full_inputs = outputs
+
+        # check if the user have import Trainer, TrainingArguments, DataCollatorForLanguageModeling
+        try:
+            from datasets import Dataset
+            from transformers import (
+                DataCollatorForLanguageModeling,
+                Trainer,
+                TrainingArguments,
+            )
+            import numpy as np
+        except ImportError:
+            print(
+                "Naive implementation is used. This may harm the efficiency of the calculation."
+            )
+            try:
+                import numpy as np
+            except ImportError:
+                raise ImportError(
+                    "You need to install 'numpy' package to use this function."
+                )
+            return float(
+                np.mean(self.calculate_perplexity(None, o) for o in full_inputs)
+            )
+
+        # prepare the dataset
+        inputs = self.tokenizer(
+            full_inputs,
+            return_tensors="pt",
+            truncation=True,
+            padding=True,
+        )
+
+        dataset = Dataset.from_dict(inputs)
+        data_collator = DataCollatorForLanguageModeling(
+            tokenizer=self.tokenizer, mlm=False
+        )
+
+        training_arguments = TrainingArguments(
+            output_dir="trash",
+            per_device_eval_batch_size=1,
+            do_train=False,
+            do_eval=True,
+            fp16=False,
+            prediction_loss_only=True,
+        )
+
+        trainer = Trainer(
+            model=self.model,
+            data_collator=data_collator,
+            args=training_arguments,
+            eval_dataset=dataset,
+        )
+
+        eval_result = trainer.evaluate()
+
+        return float(np.exp(eval_result["eval_loss"]))
 
 
 class HuggingFaceLMFitter:
