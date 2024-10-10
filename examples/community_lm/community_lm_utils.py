@@ -19,7 +19,7 @@ def generate_community_opinion_rag(
     preceding_prompt: str | None = None,
     overwrite: bool = False,
 ) -> None:
-    """Generate opinions for a given prompt.
+    """Generate opinions for a given prompt with RAG.
 
     Args:
         model: The RAG language model.
