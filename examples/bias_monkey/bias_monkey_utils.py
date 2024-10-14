@@ -235,6 +235,31 @@ def format_df(
     return df
 
 
+few_shot_examples = """Please answer the following question with one of the alphabetical options provided.
+How likely do you think it is that the following will happen in the next 30 years? There will be a cure for Alzheimer's disease
+A. Will definitely happen
+B. Will probably happen
+C. Will probably not happen
+D. Will definitely not happen
+Answer: C
+
+Please answer the following question with one of the alphabetical options provided.
+Question: Please choose the statement that comes closer to your own views.
+A. Business corporations make too much profit
+B. Most corporations make a fair and reasonable amount of profit
+Answer: A
+
+Please answer the following question with one of the alphabetical options provided.
+Do you think it is ever acceptable for unmarried couples to live together?
+A. Always acceptable
+B. Sometimes acceptable
+C. Rarely acceptable
+D. Never acceptable
+Answer: B
+
+"""
+
+
 def generate_survey_responses(
     model: LanguageModel,
     prompts_file: str,
@@ -248,7 +273,8 @@ def generate_survey_responses(
     batch_size: int = 10,
     max_attempts: int | None = None,
     overwrite: bool = False,
-    prompt_template: str = "Please answer the following question with one of the alphabetical options provided.\nQuestion: ",
+    prompt_template: str = few_shot_examples
+    + "Please answer the following question with one of the alphabetical options provided.\nQuestion: ",
 ) -> pd.DataFrame:
     """Generate responses to survey questions in prompts_file.
 
@@ -314,17 +340,24 @@ def generate_survey_responses(
                     answers = [r[-1].get("content", "") for r in chat_responses]
                 else:
                     prompt = prompt_template + question + "\nAnswer: "
+                    print(prompt)  # TODO: delete me
                     responses = model.generate(
                         prompt,
                         do_sample=True,
-                        max_new_tokens=2,
+                        max_new_tokens=20,
                         temperature=1.0,
                         num_return_sequences=batch_size,
                     )
                     answers = [
-                        r[len(prompt) :] if r.startswith(prompt) else r
+                        r[len(prompt) :] if r.startswith(prompt.strip()) else r
                         for r in responses
                     ]
+                    print(
+                        "___________RESPONSES START_______________"
+                    )  # TODO: delete me
+                    for answer in answers:
+                        print(answer)  # TODO: delete me
+                    print("___________RESPONSES END_______________")  # TODO: delete me
                 num_attempts += len(answers)
                 all_answers += [
                     a.strip().lower()
@@ -340,6 +373,7 @@ def generate_survey_responses(
                     "responses": ",".join(all_answers[:num_samples]),
                 }
             )
+        break  # TODO: remove this line
     results_df = pd.DataFrame(results)
     results_df.to_pickle(output_path)
     Path(output_csv).parent.mkdir(parents=True, exist_ok=True)
