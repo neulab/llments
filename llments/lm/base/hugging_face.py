@@ -184,6 +184,18 @@ class HuggingFaceLM(LanguageModel):
         set_seed(seed)
 
     def calculate_probability(self, condition: str | None, output: str) -> float:
+        """Calculate the probability of an output given the language model.
+
+        Args:
+            condition: The conditioning sequence for the output.
+            output: The output sequence for which the probability is calculated.
+
+        Returns:
+            float: The probability of output x given the language model.
+        """
+        raise NotImplementedError("This is not implemented yet.")
+
+    def calculate_log_probability(self, condition: str | None, output: str) -> float:
         """Calculate the log probability of an output given the language model.
 
         Args:
@@ -193,15 +205,10 @@ class HuggingFaceLM(LanguageModel):
         Returns:
             float: The probability of output x given the language model.
         """
-        try:
-            import numpy as np
-        except ImportError:
-            raise ImportError(
-                "You need to install 'numpy' package to use this function."
-            )
+        import numpy as np
 
         if condition:
-            full_input = condition + " " + output
+            full_input = condition + output
         else:
             full_input = output
 
@@ -253,14 +260,9 @@ class HuggingFaceLM(LanguageModel):
         Returns:
             float: The perplexity of output x given the language model.
         """
-        try:
-            import numpy as np
-        except ImportError:
-            raise ImportError(
-                "You need to install 'numpy' package to use this function."
-            )
+        import numpy as np
 
-        log_prob = self.calculate_probability(condition, output)
+        log_prob = self.calculate_log_probability(condition, output)
         num_tokens = len(self.tokenizer(output)["input_ids"]) - 1
 
         return float(np.exp(-log_prob / num_tokens))
@@ -278,7 +280,7 @@ class HuggingFaceLM(LanguageModel):
             list[float]: The perplexity of outputs given the language model.
         """
         if condition:
-            full_inputs = [c + " " + o for c, o in zip(condition, outputs)]
+            full_inputs = [c + o for c, o in zip(condition, outputs)]
         else:
             full_inputs = outputs
 
