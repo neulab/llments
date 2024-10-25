@@ -2,8 +2,10 @@
 
 import json
 import random
+from typing import Callable
 
 import pandas as pd
+import torch
 
 from llments.lm.lm import LanguageModel
 
@@ -31,8 +33,15 @@ class DatasetLM(LanguageModel):
         max_new_tokens: int | None = None,
         temperature: float = 1.0,
         num_return_sequences: int = 1,
+        prefix_allowed_tokens_fn: Callable[[int, torch.Tensor], list[int]]
+        | None = None,
     ) -> list[str]:
         """See base class."""
+        if prefix_allowed_tokens_fn is not None:
+            raise NotImplementedError(
+                "The 'prefix_allowed_tokens_fn' argument is not supported for DatasetLM."
+            )
+
         filtered_df = self.data
         # Adjust distribution
         if condition:
