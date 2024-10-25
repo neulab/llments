@@ -20,6 +20,7 @@ classifiers = [
 dependencies = [
     "pandas",
     "tqdm",
+    "litellm",
 ]
 dynamic = ["version"]
 

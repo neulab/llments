@@ -2,7 +2,8 @@
 
 import json
 import os
-from typing import Any
+from typing import Any, Callable, List, Optional
+import torch
 
 from llments.lm.lm import LanguageModel
 
@@ -72,6 +73,8 @@ class HuggingFaceLM(LanguageModel):
         max_new_tokens: int | None = None,
         temperature: float = 1.0,
         num_return_sequences: int = 1,
+        prefix_allowed_tokens_fn: Callable[[int, torch.Tensor], list[int]]
+        | None = None,
     ) -> list[str]:
         """Generate an output given the language model.
 
@@ -85,6 +88,8 @@ class HuggingFaceLM(LanguageModel):
             temperature: The value used to module the next token probabilities.
             num_return_sequences: The number of independently computed returned
                 sequences for each element in the batch.
+            prefix_allowed_tokens_fn: this function constraints the beam search to allowed tokens only at each step.
+                This function takes 2 arguments: the batch ID and input_ids and returns a list with the allowed tokens for the next generation.
 
         Returns:
             str: A sampled output sequence from the language model.
@@ -102,6 +107,7 @@ class HuggingFaceLM(LanguageModel):
             num_return_sequences=num_return_sequences,
             do_sample=do_sample,
             max_new_tokens=max_new_tokens,
+            prefix_allowed_tokens_fn=prefix_allowed_tokens_fn,
         )
         return [
             self.tokenizer.decode(output, skip_special_tokens=True)
