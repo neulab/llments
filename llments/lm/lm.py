@@ -1,6 +1,9 @@
 """Base class for language models."""
 
 import abc
+from typing import Callable
+
+import torch
 
 
 class LanguageModel:
@@ -29,6 +32,8 @@ class LanguageModel:
         max_new_tokens: int | None = None,
         temperature: float = 1.0,
         num_return_sequences: int = 1,
+        prefix_allowed_tokens_fn: Callable[[int, torch.Tensor], list[int]]
+        | None = None,
     ) -> list[str]:
         """Generate an output given the language model.
 
@@ -42,6 +47,8 @@ class LanguageModel:
             temperature: The value used to module the next token probabilities.
             num_return_sequences: The number of independently computed returned
                 sequences for each element in the batch.
+            prefix_allowed_tokens_fn: this function constraints the beam search to allowed tokens only at each step.
+                This function takes 2 arguments: the batch ID and input_ids and returns a list with the allowed tokens for the next generation.
 
         Returns:
             str: Sampled output sequences from the language model.

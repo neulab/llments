@@ -2,9 +2,11 @@
 
 import abc
 import os
+from typing import Callable
 import warnings
 
 from litellm import ModelResponse, batch_completion, completion
+import torch
 
 from llments.lm.lm import LanguageModel
 
@@ -58,6 +60,8 @@ class APIBasedLM(LanguageModel):
         max_new_tokens: int | None = None,
         temperature: float = 1.0,
         num_return_sequences: int = 1,
+        prefix_allowed_tokens_fn: Callable[[int, torch.Tensor], list[int]]
+        | None = None,
     ) -> list[str]:
         """Generate a response based on the given prompt.
 
@@ -73,6 +77,7 @@ class APIBasedLM(LanguageModel):
             max_new_tokens (float): The maximum number of tokens to generate in the chat completion.
             temperature (float): The sampling temperature to be used, between 0 and 2.
             num_return_sequences (int): The number of chat completion choices to generate for each input message.
+            prefix_allowed_tokens_fn: This argument is not supported for API-based language models.
 
         Returns:
             str: Sampled output sequences from the language model.
@@ -88,6 +93,10 @@ class APIBasedLM(LanguageModel):
         if max_length is not None:
             warnings.warn(
                 "A non-default value for 'max_length' was provided.", UserWarning
+            )
+        if prefix_allowed_tokens_fn is not None:
+            raise NotImplementedError(
+                "The 'prefix_allowed_tokens_fn' argument is not supported for API-based language models."
             )
 
         responses = []
