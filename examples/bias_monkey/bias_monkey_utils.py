@@ -10,7 +10,7 @@ from collections import Counter
 from operator import itemgetter
 from pathlib import Path
 from statistics import mean
-from typing import Any
+from typing import Any, Callable
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -18,6 +18,7 @@ import pandas as pd
 import seaborn as sns
 from matplotlib.gridspec import SubplotSpec
 from scipy.stats import entropy, pearsonr, ttest_1samp, wasserstein_distance
+import torch
 from tqdm import tqdm
 from tqdm.contrib import itertools as tqdm_itertools
 
@@ -235,6 +236,7 @@ def format_df(
     return df
 
 
+# TODO: delete this
 few_shot_examples = """Please answer the following question with one of the alphabetical options provided.
 How likely do you think it is that the following will happen in the next 30 years? There will be a cure for Alzheimer's disease
 A. Will definitely happen
@@ -275,6 +277,7 @@ def generate_survey_responses(
     overwrite: bool = False,
     prompt_template: str = few_shot_examples
     + "Please answer the following question with one of the alphabetical options provided.\nQuestion: ",
+    prefix_allowed_tokens_fn: Callable[[int, torch.Tensor], list[int]] | None = None,
 ) -> pd.DataFrame:
     """Generate responses to survey questions in prompts_file.
 
@@ -292,6 +295,8 @@ def generate_survey_responses(
         max_attempts: The maximum number of attempts to generate valid responses.
         overwrite: Whether to overwrite the output file if it exists.
         prompt_template: The template for the prompt.
+        prefix_allowed_tokens_fn: this function constraints the beam search to allowed tokens only at each step.
+            This function takes 2 arguments: the batch ID and input_ids and returns a list with the allowed tokens for the next generation.
     """
     if seed is not None:
         model.set_seed(seed)
@@ -344,9 +349,10 @@ def generate_survey_responses(
                     responses = model.generate(
                         prompt,
                         do_sample=True,
-                        max_new_tokens=20,
+                        max_new_tokens=1,  # TODO: fix this
                         temperature=1.0,
                         num_return_sequences=batch_size,
+                        prefix_allowed_tokens_fn=prefix_allowed_tokens_fn,
                     )
                     answers = [
                         r[len(prompt) :] if r.startswith(prompt.strip()) else r
