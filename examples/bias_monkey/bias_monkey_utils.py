@@ -16,9 +16,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import torch
 from matplotlib.gridspec import SubplotSpec
 from scipy.stats import entropy, pearsonr, ttest_1samp, wasserstein_distance
-import torch
 from tqdm import tqdm
 from tqdm.contrib import itertools as tqdm_itertools
 
@@ -236,7 +236,6 @@ def format_df(
     return df
 
 
-# TODO: delete this
 few_shot_examples = """Please answer the following question with one of the alphabetical options provided.
 How likely do you think it is that the following will happen in the next 30 years? There will be a cure for Alzheimer's disease
 A. Will definitely happen
@@ -275,8 +274,8 @@ def generate_survey_responses(
     batch_size: int = 10,
     max_attempts: int | None = None,
     overwrite: bool = False,
-    prompt_template: str = few_shot_examples
-    + "Please answer the following question with one of the alphabetical options provided.\nQuestion: ",
+    prompt_template: str = "Please answer the following question with one of the alphabetical options provided.\nQuestion: ",
+    few_shot_examples: str = "",
     prefix_allowed_tokens_fn: Callable[[int, torch.Tensor], list[int]] | None = None,
 ) -> pd.DataFrame:
     """Generate responses to survey questions in prompts_file.
@@ -295,9 +294,12 @@ def generate_survey_responses(
         max_attempts: The maximum number of attempts to generate valid responses.
         overwrite: Whether to overwrite the output file if it exists.
         prompt_template: The template for the prompt.
+        few_shot_examples: Few-shot examples to prepend to the prompt.
         prefix_allowed_tokens_fn: this function constraints the beam search to allowed tokens only at each step.
             This function takes 2 arguments: the batch ID and input_ids and returns a list with the allowed tokens for the next generation.
     """
+    prompt_template = few_shot_examples + prompt_template
+
     if seed is not None:
         model.set_seed(seed)
 
@@ -345,11 +347,10 @@ def generate_survey_responses(
                     answers = [r[-1].get("content", "") for r in chat_responses]
                 else:
                     prompt = prompt_template + question + "\nAnswer: "
-                    print(prompt)  # TODO: delete me
                     responses = model.generate(
                         prompt,
                         do_sample=True,
-                        max_new_tokens=1,  # TODO: fix this
+                        max_new_tokens=1,
                         temperature=1.0,
                         num_return_sequences=batch_size,
                         prefix_allowed_tokens_fn=prefix_allowed_tokens_fn,
@@ -358,12 +359,6 @@ def generate_survey_responses(
                         r[len(prompt) :] if r.startswith(prompt.strip()) else r
                         for r in responses
                     ]
-                    print(
-                        "___________RESPONSES START_______________"
-                    )  # TODO: delete me
-                    for answer in answers:
-                        print(answer)  # TODO: delete me
-                    print("___________RESPONSES END_______________")  # TODO: delete me
                 num_attempts += len(answers)
                 all_answers += [
                     a.strip().lower()
@@ -379,7 +374,6 @@ def generate_survey_responses(
                     "responses": ",".join(all_answers[:num_samples]),
                 }
             )
-        break  # TODO: remove this line
     results_df = pd.DataFrame(results)
     results_df.to_pickle(output_path)
     Path(output_csv).parent.mkdir(parents=True, exist_ok=True)
