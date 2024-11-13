@@ -12,4 +12,4 @@ tokenizers
 torch
 torchtext
 transformers
-tweet-preprocessor
+tqdm
