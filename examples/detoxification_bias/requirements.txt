@@ -11,5 +11,5 @@ tensorboardX
 tokenizers
 torch
 torchtext
-transformers
 tqdm
+transformers
