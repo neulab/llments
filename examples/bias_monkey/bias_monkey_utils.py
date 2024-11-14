@@ -447,8 +447,12 @@ def plot_heatmap(models: list[str], results_dir: str) -> pd.DataFrame:
         lst = [model, clean_bias_labels[i], mean(values), p_value]
 
         for perturbation in perturbations:
-            if bias_types[i] == "opinion_float":  # qustions are the same
+            # questions in odd_even and opinion_float are the same
+            csv_file = f"{results_dir}/{model}/csv/{bias_types[i]}{perturbation}.csv"
+            if bias_types[i] == "opinion_float" and not Path(csv_file).exists():
                 bias_type = "odd_even" + perturbation
+            elif bias_types[i] == "odd_even" and not Path(csv_file).exists():
+                bias_type = "opinion_float" + perturbation
             else:
                 bias_type = bias_types[i] + perturbation
 
@@ -481,7 +485,10 @@ def plot_heatmap(models: list[str], results_dir: str) -> pd.DataFrame:
     models = list(models) + ["ideal"]
     clean_model_labels += ["Most Human-like"]
 
-    fig, axs = plt.subplots(2, len(models) // 2, figsize=(15, 6))
+    # fig, axs = plt.subplots(2, len(models) // 2, figsize=(15, 6))
+    nrows = (len(models) + 4) // 5
+    fig, axs = plt.subplots(nrows, 5, figsize=(15, 3 * nrows))
+    axs = np.atleast_2d(axs)
 
     cmap_name = "tab20c"
 
@@ -714,8 +721,12 @@ def plot_uncertainity(models: list[str], results_dir: str) -> pd.DataFrame:
         )
         lst = [model, bias_type, orig_mean, orig_std, new_mean, new_std]
         for perturbation in perturbations:
-            if bias_types[i] == "opinion_float":  # qustions are the same
+            # questions in odd_even and opinion_float are the same
+            pkl_file = f"{results_dir}/{model}/{bias_types[i]}{perturbation}.pickle"
+            if bias_types[i] == "opinion_float" and not Path(pkl_file).exists():
                 bias_type = "odd_even" + perturbation
+            elif bias_types[i] == "odd_even" and not Path(pkl_file).exists():
+                bias_type = "opinion_float" + perturbation
             else:
                 bias_type = bias_types[i] + perturbation
             orig_mean, orig_std, new_mean, new_std = get_entropies(
