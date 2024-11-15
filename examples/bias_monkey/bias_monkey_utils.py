@@ -10,12 +10,13 @@ from collections import Counter
 from operator import itemgetter
 from pathlib import Path
 from statistics import mean
-from typing import Any
+from typing import Any, Callable
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import torch
 from matplotlib.gridspec import SubplotSpec
 from scipy.stats import entropy, pearsonr, ttest_1samp, wasserstein_distance
 from tqdm import tqdm
@@ -235,6 +236,31 @@ def format_df(
     return df
 
 
+few_shot_examples = """Please answer the following question with one of the alphabetical options provided.
+How likely do you think it is that the following will happen in the next 30 years? There will be a cure for Alzheimer's disease
+A. Will definitely happen
+B. Will probably happen
+C. Will probably not happen
+D. Will definitely not happen
+Answer: C
+
+Please answer the following question with one of the alphabetical options provided.
+Question: Please choose the statement that comes closer to your own views.
+A. Business corporations make too much profit
+B. Most corporations make a fair and reasonable amount of profit
+Answer: A
+
+Please answer the following question with one of the alphabetical options provided.
+Do you think it is ever acceptable for unmarried couples to live together?
+A. Always acceptable
+B. Sometimes acceptable
+C. Rarely acceptable
+D. Never acceptable
+Answer: B
+
+"""
+
+
 def generate_survey_responses(
     model: LanguageModel,
     prompts_file: str,
@@ -249,6 +275,8 @@ def generate_survey_responses(
     max_attempts: int | None = None,
     overwrite: bool = False,
     prompt_template: str = "Please answer the following question with one of the alphabetical options provided.\nQuestion: ",
+    few_shot_examples: str = "",
+    prefix_allowed_tokens_fn: Callable[[int, torch.Tensor], list[int]] | None = None,
 ) -> pd.DataFrame:
     """Generate responses to survey questions in prompts_file.
 
@@ -266,7 +294,12 @@ def generate_survey_responses(
         max_attempts: The maximum number of attempts to generate valid responses.
         overwrite: Whether to overwrite the output file if it exists.
         prompt_template: The template for the prompt.
+        few_shot_examples: Few-shot examples to prepend to the prompt.
+        prefix_allowed_tokens_fn: this function constraints the beam search to allowed tokens only at each step.
+            This function takes 2 arguments: the batch ID and input_ids and returns a list with the allowed tokens for the next generation.
     """
+    prompt_template = few_shot_examples + prompt_template
+
     if seed is not None:
         model.set_seed(seed)
 
@@ -317,12 +350,13 @@ def generate_survey_responses(
                     responses = model.generate(
                         prompt,
                         do_sample=True,
-                        max_new_tokens=2,
+                        max_new_tokens=1,
                         temperature=1.0,
                         num_return_sequences=batch_size,
+                        prefix_allowed_tokens_fn=prefix_allowed_tokens_fn,
                     )
                     answers = [
-                        r[len(prompt) :] if r.startswith(prompt) else r
+                        r[len(prompt) :] if r.startswith(prompt.strip()) else r
                         for r in responses
                     ]
                 num_attempts += len(answers)
@@ -413,8 +447,12 @@ def plot_heatmap(models: list[str], results_dir: str) -> pd.DataFrame:
         lst = [model, clean_bias_labels[i], mean(values), p_value]
 
         for perturbation in perturbations:
-            if bias_types[i] == "opinion_float":  # qustions are the same
+            # questions in odd_even and opinion_float are the same
+            csv_file = f"{results_dir}/{model}/csv/{bias_types[i]}{perturbation}.csv"
+            if bias_types[i] == "opinion_float" and not Path(csv_file).exists():
                 bias_type = "odd_even" + perturbation
+            elif bias_types[i] == "odd_even" and not Path(csv_file).exists():
+                bias_type = "opinion_float" + perturbation
             else:
                 bias_type = bias_types[i] + perturbation
 
@@ -447,7 +485,10 @@ def plot_heatmap(models: list[str], results_dir: str) -> pd.DataFrame:
     models = list(models) + ["ideal"]
     clean_model_labels += ["Most Human-like"]
 
-    fig, axs = plt.subplots(2, len(models) // 2, figsize=(15, 6))
+    # fig, axs = plt.subplots(2, len(models) // 2, figsize=(15, 6))
+    nrows = (len(models) + 4) // 5
+    fig, axs = plt.subplots(nrows, 5, figsize=(15, 3 * nrows))
+    axs = np.atleast_2d(axs)
 
     cmap_name = "tab20c"
 
@@ -680,8 +721,12 @@ def plot_uncertainity(models: list[str], results_dir: str) -> pd.DataFrame:
         )
         lst = [model, bias_type, orig_mean, orig_std, new_mean, new_std]
         for perturbation in perturbations:
-            if bias_types[i] == "opinion_float":  # qustions are the same
+            # questions in odd_even and opinion_float are the same
+            pkl_file = f"{results_dir}/{model}/{bias_types[i]}{perturbation}.pickle"
+            if bias_types[i] == "opinion_float" and not Path(pkl_file).exists():
                 bias_type = "odd_even" + perturbation
+            elif bias_types[i] == "odd_even" and not Path(pkl_file).exists():
+                bias_type = "opinion_float" + perturbation
             else:
                 bias_type = bias_types[i] + perturbation
             orig_mean, orig_std, new_mean, new_std = get_entropies(
