@@ -11,5 +11,5 @@ tensorboardX
 tokenizers
 torch
 torchtext
+tqdm
 transformers
-tweet-preprocessor
