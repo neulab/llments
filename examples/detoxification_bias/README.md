@@ -94,3 +94,13 @@ and the original paper and datasets.
     year = "2020"
 }
 ```
+
+```bibtex
+@inproceedings{Gehman2020RealToxicityPromptsEN,
+  title={RealToxicityPrompts: Evaluating Neural Toxic Degeneration in Language Models},
+  author={Samuel Gehman and Suchin Gururangan and Maarten Sap and Yejin Choi and Noah A. Smith},
+  booktitle={Findings},
+  year={2020},
+  url={https://api.semanticscholar.org/CorpusID:221878771}
+}
+```
