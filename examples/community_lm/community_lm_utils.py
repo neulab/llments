@@ -2,6 +2,7 @@
 
 import os
 import tqdm
+import csv
 from pathlib import Path
 from community_lm_constants import anes_df
 import pandas as pd
@@ -162,3 +163,58 @@ def compute_group_stance(
 
     df = pd.DataFrame(rows, columns=columns)
     df.to_csv(output_filename)
+
+def compute_group_stance_factscore(
+    evaluator: SentimentEvaluator,
+    input_filename: str,
+) -> dict[str, float]:
+    """
+    Calculates group sentiment for the democratic and republican parties.
+
+    Args:
+        input_filename (str): The input filename.
+        evaluator: The sentiment evaluator.
+
+    Returns:
+        dict: A dictionary with keys 'democratic' and 'republican' containing their respective sentiments.
+    """
+    democratic_responses = []
+    republican_responses = []
+    
+    try:
+        with open(input_filename, mode='r', newline='', encoding='utf-8') as csvfile:
+            reader = csv.DictReader(csvfile)
+
+            for row in reader:
+                party = row['Party'].strip().lower()
+                response = row['Response'].strip()
+                if not response:
+                    continue  # Skip empty responses
+                if party == 'democrats':
+                    democratic_responses.append(response)
+                elif party == 'republicans':
+                    republican_responses.append(response)
+                else:
+                    print(f"Warning: Unknown party '{party}' in row: {row}")
+
+        # Function to evaluate sentiments
+        def evaluate_sentiments(responses, party_name):
+            if not responses:
+                print(f"No responses found for party: {party_name.capitalize()}")
+                return None
+            sentiment_vals = evaluator.evaluate_batch(responses, minibatch_size=len(responses))
+            group_sentiment = np.mean(sentiment_vals) * 100
+            return group_sentiment
+
+        # Calculate sentiments for each group
+        sentiments = {}
+        sentiments['democratic'] = evaluate_sentiments(democratic_responses, 'democratic')
+        sentiments['republican'] = evaluate_sentiments(republican_responses, 'republican')
+        return sentiments
+
+    except FileNotFoundError:
+        print(f"Error: The file '{input_filename}' does not exist.")
+        return {}
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return {}
