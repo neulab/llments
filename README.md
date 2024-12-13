@@ -16,3 +16,4 @@ commit to perform formatting, typing, and linting.
 * `mypy` - Runs type checking.
 * `markdownlint` - Runs markdown linting.
 * `yamllint` - Runs YAML linting.
+
