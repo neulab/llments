@@ -7,6 +7,7 @@ from pathlib import Path
 from community_lm_constants import anes_df
 import pandas as pd
 import numpy as np
+from typing import cast
 
 from llments.lm.lm import LanguageModel
 from llments.lm.rag import RAGLanguageModel
@@ -199,25 +200,22 @@ def compute_group_stance_factscore(
 
         # Function to evaluate sentiments
         def evaluate_sentiments(
-            responses: List,
+            responses: list[str],
             party_name: str,
         ) -> float:
             """
             Calculates sentiment for given responses and party.
         
             Args:
-                responses (List): A list containing synthetic tweets for all politicians of a given party.
+                responses (list[str]): A list containing synthetic tweets for all politicians of a given party.
                 party_name (str): The party for which we calculate the sentiment.
         
             Returns:
                 float: Group sentiment towards politicians of a given party.
             """
-            if not responses:
-                print(f"No responses found for party: {party_name.capitalize()}")
-                return None
             sentiment_vals = evaluator.evaluate_batch(responses, minibatch_size=len(responses))
             group_sentiment = np.mean(sentiment_vals) * 100
-            return group_sentiment
+            return cast(float, group_sentiment)
 
         # Calculate sentiments for each group
         sentiments = {}
