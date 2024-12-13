@@ -21,20 +21,20 @@ pip install -r requirements.txt
 
 To access and use OpenAI's services (such as GPT models),
 you must obtain an API key from OpenAI.
-After acquiring your API key, store it in a txt file 
-such as `key.txt` amd pass it when creating an instance 
+After acquiring your API key, store it in a txt file
+such as `key.txt` amd pass it when creating an instance
 of the `FactScorer` class.
 
 ### Data Preparation
 
-Before running the code to generate the CommunityLM responses, 
+Before running the code to generate the CommunityLM responses,
 make sure you have created the following directory to store the data:
 
 ```bash
 mkdir -p factscore_data
 ```
 
-This will be the data directory for the FactScore analysis 
+This will be the data directory for the FactScore analysis
 and all CSV files must be inside this folder.
 
 ## Reference
