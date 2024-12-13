@@ -198,7 +198,20 @@ def compute_group_stance_factscore(
                     print(f"Warning: Unknown party '{party}' in row: {row}")
 
         # Function to evaluate sentiments
-        def evaluate_sentiments(responses, party_name):
+        def evaluate_sentiments(
+            responses: List,
+            party_name: str,
+        ) -> float:
+            """
+            Calculates sentiment for given responses and party.
+        
+            Args:
+                responses (List): A list containing synthetic tweets for all politicians of a given party.
+                party_name (str): The party for which we calculate the sentiment.
+        
+            Returns:
+                float: Group sentiment towards politicians of a given party.
+            """
             if not responses:
                 print(f"No responses found for party: {party_name.capitalize()}")
                 return None
