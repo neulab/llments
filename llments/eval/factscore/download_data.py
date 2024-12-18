@@ -1,12 +1,29 @@
+"""
+Download Data Module
+"""
 import argparse
 import os
 import subprocess
 import torch
 import tqdm
 import transformers
+from typing import Tuple
 
+def download_file(_id: str, dest: str, cache_dir: str) -> None:
+    """
+    Download a file from a given URL or Google Drive ID to the specified destination.
 
-def download_file(_id, dest, cache_dir):
+    Args:
+        _id (str): The URL or Google Drive ID of the file to download.
+        dest (str): The destination file path where the downloaded file will be saved.
+        cache_dir (str): The directory where cached files are stored.
+
+    Returns:
+        None
+
+    Raises:
+        subprocess.CalledProcessError: If the download or unzip command fails.
+    """
     if os.path.exists(dest) or os.path.exists(os.path.join(cache_dir, dest)):
         print ("[Already exists] Skipping", dest)
         print ("If you want to download the file in another location, please specify a different path")
@@ -44,12 +61,23 @@ def download_file(_id, dest, cache_dir):
         else:
             print("Unzip {} ... [Success]".format(dest))
 
-
-
-def smart_tokenizer_and_embedding_resize(special_tokens_dict, tokenizer, model):
-    """Resize tokenizer and embedding.
+def smart_tokenizer_and_embedding_resize(
+    special_tokens_dict: dict,
+    tokenizer: transformers.PreTrainedTokenizer,
+    model: transformers.PreTrainedModel,
+) -> None:
+    """
+    Resize tokenizer and embedding.
 
     Note: This is the unoptimized version that may make your embedding size not be divisible by 64.
+
+    Args:
+        special_tokens_dict (dict): Dictionary of special tokens to add.
+        tokenizer (transformers.PreTrainedTokenizer): The tokenizer to be resized.
+        model (transformers.PreTrainedModel): The model whose embeddings will be resized.
+
+    Returns:
+        None
     """
     num_new_tokens = tokenizer.add_special_tokens(special_tokens_dict)
     model.resize_token_embeddings(len(tokenizer))
@@ -64,10 +92,30 @@ def smart_tokenizer_and_embedding_resize(special_tokens_dict, tokenizer, model):
         input_embeddings[-num_new_tokens:] = input_embeddings_avg
         output_embeddings[-num_new_tokens:] = output_embeddings_avg
 
+def recover_instruct_llama(
+    path_raw: str,
+    output_path: str,
+    device: str = "cpu",
+    test_recovered_model: bool = False
+) -> Tuple[transformers.PreTrainedModel, transformers.PreTrainedTokenizer]:
+    """
+    Recover an instruct LLaMA model by adding state dictionaries from a raw model to a recovered model.
+    Heavily adapted from https://github.com/tatsu-lab/stanford_alpaca/blob/main/weight_diff.py.
 
-def recover_instruct_llama(path_raw, output_path, device="cpu", test_recovered_model=False):
-    """Heavily adapted from https://github.com/tatsu-lab/stanford_alpaca/blob/main/weight_diff.py."""
+    Args:
+        path_raw (str): Path to the raw pre-trained model directory.
+        output_path (str): Path where the recovered model and tokenizer will be saved.
+        device (str, optional): Device to load the model onto. Defaults to "cpu".
+        test_recovered_model (bool, optional): If True, generates a sample response to test the recovered model. Defaults to False.
 
+    Returns:
+        Tuple[transformers.PreTrainedModel, transformers.PreTrainedTokenizer]:
+            - The recovered pre-trained model.
+            - The recovered tokenizer.
+
+    Raises:
+        AssertionError: If the generated output does not meet expectations.
+    """
     model_raw = transformers.AutoModelForCausalLM.from_pretrained(
         path_raw,
         device_map={"": torch.device(device)},

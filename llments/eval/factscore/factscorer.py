@@ -1,9 +1,13 @@
+"""
+FactScore Scoring Module
+"""
 import argparse
 import string
 import json
 import numpy as np
 import os
 import logging
+from typing import List, Optional, Dict, Any, Union
 
 from tqdm import tqdm
 from factscore.abstain_detection import is_response_abstained
@@ -13,17 +17,67 @@ from factscore.npm import NPM
 from factscore.openai_lm import OpenAIModel
 from factscore.retrieval import DocDB, Retrieval
 
-class FactScorer(object):
+class FactScorer:
+    """
+    FactScorer Class
 
-    def __init__(self,
-                 model_name="retrieval+ChatGPT",
-                 data_dir="/factscore_data",
-                 model_dir="/factscore_data",
-                 cache_dir="/factscore_data",
-                 openai_key="key.txt",
-                 cost_estimate="consider_cache",
-                 abstain_detection_type=None,
-                 batch_size=256):
+    This class integrates various language models and retrieval mechanisms to evaluate the factual accuracy
+    of generated text. It supports different configurations, including retrieval-based models with ChatGPT,
+    LLaMA, and NPM. The class handles caching of retrieval results and generated atomic facts to optimize
+    performance and reduce redundant computations. It also includes functionality for cost estimation related
+    to OpenAI API usage.
+
+    Attributes:
+        model_name (str): Configuration of the language model to use.
+        db (Dict[str, DocDB]): Dictionary mapping knowledge source names to DocDB instances.
+        retrieval (Dict[str, Retrieval]): Dictionary mapping knowledge source names to Retrieval instances.
+        npm (Dict[str, NPM]): Dictionary mapping knowledge source names to NPM instances.
+        batch_size (int): Batch size for retrieval processes.
+        openai_key (str): Path to the OpenAI API key file.
+        abstain_detection_type (Optional[str]): Type of abstain detection to use.
+        data_dir (str): Directory for storing data files.
+        cache_dir (str): Directory for storing cache files.
+        af_generator (Optional[AtomicFactGenerator]): Instance of AtomicFactGenerator for generating atomic facts.
+        cost_estimate (str): Strategy for estimating API costs.
+        lm (Optional[Union[CLM, OpenAIModel]]): Language model instance (CLM or OpenAIModel).
+    """
+    def __init__(
+        self,
+        model_name: str = "retrieval+ChatGPT",
+        data_dir: str = "/factscore_data",
+        model_dir: str = "/factscore_data",
+        cache_dir: str = "/factscore_data",
+        openai_key: str = "key.txt",
+        cost_estimate: str = "consider_cache",
+        abstain_detection_type: Optional[str] = None,
+        batch_size: int = 256,
+    ) -> None:
+        """
+        Initialize the FactScorer instance.
+
+        Args:
+            model_name (str, optional): Configuration of the language model to use.
+                Defaults to "retrieval+ChatGPT".
+            data_dir (str, optional): Directory for storing data files.
+                Defaults to "/factscore_data".
+            model_dir (str, optional): Directory for storing models.
+                Defaults to "/factscore_data".
+            cache_dir (str, optional): Directory for storing cache files.
+                Defaults to "/factscore_data".
+            openai_key (str, optional): Path to the OpenAI API key file.
+                Defaults to "key.txt".
+            cost_estimate (str, optional): Strategy for estimating API costs.
+                Options: "consider_cache", "ignore_cache".
+                Defaults to "consider_cache".
+            abstain_detection_type (Optional[str], optional): Type of abstain detection to use.
+                Options: "perplexity_ai", "generic", "none".
+                Defaults to None.
+            batch_size (int, optional): Batch size for retrieval processes.
+                Defaults to 256.
+
+        Raises:
+            AssertionError: If `model_name` is not among the supported configurations.
+        """
         assert model_name in ["retrieval+llama", "retrieval+llama+npm", "retrieval+ChatGPT", "npm", "retrieval+ChatGPT+npm"]
         self.model_name = model_name
 
@@ -53,7 +107,13 @@ class FactScorer(object):
         else:
             self.lm = None
 
-    def save_cache(self):
+    def save_cache(self) -> None:
+        """
+        Save caches for the language model, NPM instances, and retrieval instances.
+
+        This method ensures that any new entries added to the caches are persisted to their respective
+        cache files to optimize performance and avoid redundant computations.
+        """
         if self.lm:
             self.lm.save_cache()
         if "npm" in self.model_name:
@@ -62,7 +122,28 @@ class FactScorer(object):
         for k, v in self.retrieval.items():
             v.save_cache()
 
-    def register_knowledge_source(self, name="enwiki-20230401", db_path=None, data_path=None):
+    def register_knowledge_source(
+        self,
+        name: str = "enwiki-20230401",
+        db_path: Optional[str] = None,
+        data_path: Optional[str] = None,
+    ) -> None:
+        """
+        Register a new knowledge source for retrieval.
+
+        This method initializes a new `DocDB` and `Retrieval` instance for the specified knowledge source.
+        If NPM is included in the model configuration, it also initializes an `NPM` instance for the knowledge source.
+
+        Args:
+            name (str, optional): Name of the knowledge source. Defaults to "enwiki-20230401".
+            db_path (Optional[str], optional): Path to the SQLite database file.
+                If not provided, defaults to `<data_dir>/<name>.db`. Defaults to None.
+            data_path (Optional[str], optional): Path to the raw data file for building the database.
+                If not provided, defaults to `<data_dir>/<name>.jsonl`. Defaults to None.
+
+        Raises:
+            AssertionError: If the knowledge source `name` is already registered.
+        """
         assert name not in self.retrieval, f"{name} already registered"
         if db_path is None:
             db_path = os.path.join(self.data_dir, f"{name}.db")
@@ -83,17 +164,30 @@ class FactScorer(object):
                                  cache_file=os.path.join(self.cache_dir, f"npm-{name}.pkl"))
 
 
-    def print_cost_estimates(self, total_words, task, model):
+    def print_cost_estimates(
+        self,
+        total_words: int,
+        task: str,
+        model: str,
+    ) -> None:
+        """
+        Print the estimated cost of OpenAI API usage based on the number of tokens.
+
+        Args:
+            total_words (int): Total number of words to be processed.
+            task (str): Description of the task for which cost is being estimated.
+            model (str): OpenAI model used for the task.
+        """
         # https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them
         # Number of tokens are roughly 4/3 of the number of words
         total_tokens = total_words * 4.0 / 3
 
         # https://openai.com/pricing
-        # if we use davinci-003, the cost is $0.02 per 1000 tokens
+        # if we use gpt-3.5-turbo-instruct, the cost is $0.002 per 1000 tokens
         # if we use gpt-3.5-turbo, the cost is $0.002 per 1000 tokens
         rate = 0
-        if model == "davinci-003":
-            rate = 0.02
+        if model == "gpt-3.5-turbo-instruct":
+            rate = 0.002
         elif model == "gpt-3.5-turbo":
             rate = 0.002
         else:
@@ -104,13 +198,36 @@ class FactScorer(object):
         # print the total words, tokens, and cost along with rate
         logging.critical("Estimated OpenAI API cost for %s ($%.3f per 1000 tokens): $%.2f for %d words and %d tokens" % (task, rate, total_cost, total_words, total_tokens))
 
-    def get_score(self,
-                  topics,
-                  generations,
-                  gamma=10,
-                  atomic_facts=None,
-                  knowledge_source=None,
-                  verbose=False):
+    def get_score(
+        self,
+        topics: Union[str, List[str]],
+        generations: Union[str, List[str]],
+        gamma: int = 10,
+        atomic_facts: Optional[List[List[str]]] = None,
+        knowledge_source: Optional[str] = None,
+        verbose: bool = False,
+    ) -> Dict[str, Any]:
+        """
+        Compute the factual accuracy score for the provided generations based on topics.
+
+        This method retrieves relevant passages for each topic, generates or uses provided atomic facts,
+        evaluates whether the generated content is supported by the retrieved knowledge, and computes
+        an overall factual accuracy score.
+
+        Args:
+            topics (Union[str, List[str]]): Single topic string or a list of topic strings.
+            generations (Union[str, List[str]]): Single generation string or a list of generation strings.
+            gamma (int, optional): Hyperparameter for length penalty. Defaults to 10.
+            atomic_facts (Optional[List[List[str]]], optional): Precomputed atomic facts for each generation.
+                If not provided, atomic facts will be generated. Defaults to None.
+            knowledge_source (Optional[str], optional): Name of the knowledge source to use for retrieval.
+                Defaults to "enwiki-20230401".
+            verbose (bool, optional): If True, display progress bars. Defaults to False.
+
+        Returns:
+            Dict[str, Any]: Dictionary containing the overall score, respond ratio, decisions,
+                and average number of atomic facts per valid response.
+        """
         if knowledge_source is None:
             # use the default knowledge source
             knowledge_source = "enwiki-20230401"
@@ -208,8 +325,34 @@ class FactScorer(object):
             out["init_score"] = np.mean(init_scores)
         
         return out
+    def _get_score(
+        self,
+        topic: str,
+        generation: str,
+        atomic_facts: List[str],
+        knowledge_source: str,
+        cost_estimate: Optional[str] = None,
+    ) -> Union[List[Dict[str, bool]], int]:
+        """
+        Compute support scores for each atomic fact based on the knowledge source.
 
-    def _get_score(self, topic, generation, atomic_facts, knowledge_source, cost_estimate=None):
+        This internal method evaluates whether each atomic fact is supported by the retrieved passages
+        using the configured language model and NPM (if applicable).
+
+        Args:
+            topic (str): The topic associated with the generation.
+            generation (str): The generated text to evaluate.
+            atomic_facts (List[str]): List of atomic facts extracted from the generation.
+            knowledge_source (str): Name of the knowledge source to use for retrieval.
+            cost_estimate (Optional[str], optional): Strategy for estimating API costs.
+                If set, the method only accumulates the number of words without generating scores.
+                Defaults to None.
+
+        Returns:
+            Union[List[Dict[str, bool]], int]:
+                - If `cost_estimate` is provided, returns the total number of words processed.
+                - Otherwise, returns a list of decision dictionaries indicating support for each atomic fact.
+        """
         decisions = []
         total_words = 0
         for atom in atomic_facts:

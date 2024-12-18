@@ -1,18 +1,60 @@
+"""
+NPM Language Model Module
+"""
 import numpy as np
 import torch
-import time
 from collections import defaultdict
+from typing import List, Tuple, Optional
 from transformers import AutoModelForMaskedLM, AutoTokenizer
 
 from factscore.lm import LM
 from factscore.retrieval import Retrieval
 
-def softmax(x):
+def softmax(x: np.ndarray) -> np.ndarray:
+    """
+    Compute the softmax of a given NumPy array.
+
+    Args:
+        x (np.ndarray): Input array.
+
+    Returns:
+        np.ndarray: Softmax-transformed array.
+    """
     return(np.exp(x - np.max(x)) / np.exp(x - np.max(x)).sum())
 
 class NPM(LM):
+    """
+    NPM Language Model integrating BM25 retrieval with a masked language model.
 
-    def __init__(self, bm25, model_name, cache_file):
+    This class extends the `LM` base class and provides functionalities to tokenize,
+    encode, decode, and compute probabilities based on input topics and questions.
+    It leverages BM25 for passage retrieval and a masked language model for probability estimation.
+
+    Attributes:
+        bm25 (Retrieval): BM25 retrieval instance for fetching relevant passages.
+        model_name (str): Name of the pre-trained masked language model.
+        model (Optional[AutoModelForMaskedLM]): Loaded masked language model.
+        tokenizer (AutoTokenizer): Tokenizer corresponding to the masked language model.
+        mask_id (int): Token ID used for masking in the tokenizer.
+        stopwords (set): Set of stopword token IDs.
+    """
+    def __init__(
+        self,
+        bm25: Retrieval,
+        model_name: str,
+        cache_file: str,
+    ) -> None:
+        """
+        Initialize the NPM language model.
+
+        Args:
+            bm25 (Retrieval): BM25 retrieval instance for fetching relevant passages.
+            model_name (str): Name of the pre-trained masked language model. Must start with "npm".
+            cache_file (str): Path to the cache file for storing computed probabilities.
+
+        Raises:
+            AssertionError: If `model_name` does not start with "npm".
+        """
         assert model_name.startswith("npm")
         self.bm25 = bm25
         self.model_name = model_name
@@ -28,16 +70,41 @@ class NPM(LM):
 
         super().__init__(cache_file=cache_file)
 
-    def load_model(self):
+    def load_model(self) -> None:
+        """
+        Load the pre-trained masked language model and move it to GPU.
+
+        Raises:
+            OSError: If the model cannot be loaded.
+        """
         self.model = AutoModelForMaskedLM.from_pretrained("facebook/" + self.model_name)
         self.model.cuda()
         self.model.eval()
 
-    def save_cache(self):
+    def save_cache(self) -> None:
+        """
+        Save the cache for both the language model and BM25 retrieval.
+        """
         super().save_cache()
         self.bm25.save_cache()
 
-    def tokenize(self, texts, skip_special_tokens=False, padding=True):
+    def tokenize(
+        self,
+        texts: List[str],
+        skip_special_tokens: bool = False,
+        padding: bool = True,
+    ) -> Tuple[torch.LongTensor, torch.LongTensor]:
+        """
+        Tokenize a list of texts with optional skipping of special tokens and padding.
+
+        Args:
+            texts (List[str]): List of text strings to tokenize.
+            skip_special_tokens (bool, optional): Whether to remove special tokens. Defaults to False.
+            padding (bool, optional): Whether to pad the tokenized sequences. Defaults to True.
+
+        Returns:
+            Tuple[torch.LongTensor, torch.LongTensor]: Tuple containing token IDs and attention masks.
+        """
         assert type(texts)==list
         all_input_ids = self.tokenizer(texts)["input_ids"]
         if skip_special_tokens:
@@ -56,10 +123,38 @@ class NPM(LM):
             _all_attention_mask.append([1 for _ in range(n_valid)] + [0 for _ in range(n_masks)])
         return torch.LongTensor(_all_input_ids), torch.LongTensor(_all_attention_mask)
 
-    def decode(self, input_ids):
+    def decode(self, input_ids: List[int]) -> str:
+        """
+        Decode a list of input IDs back into a string.
+
+        Args:
+            input_ids (List[int]): List of token IDs.
+
+        Returns:
+            str: Decoded string.
+        """
         return self.tokenizer.decode(input_ids)
 
-    def encode(self, texts, skip_special_tokens=False, gt_input_ids=None):
+    def encode(
+        self,
+        texts: List[str],
+        skip_special_tokens: bool = False,
+        gt_input_ids: Optional[List[int]] = None,
+    ) -> List[Tuple[float, np.ndarray]]:
+        """
+        Encode a list of texts into probabilities and hidden states.
+
+        Args:
+            texts (List[str]): List of text strings to encode.
+            skip_special_tokens (bool, optional): Whether to skip special tokens during tokenization. Defaults to False.
+            gt_input_ids (Optional[List[int]], optional): Ground truth input IDs for masking. Defaults to None.
+
+        Returns:
+            List[Tuple[float, np.ndarray]]: List of tuples containing probabilities and hidden states.
+
+        Raises:
+            AssertionError: If `texts` is not a list or if lengths of `texts` and `gt_input_ids` do not match.
+        """
         assert type(texts)==list
         if self.model is None:
             self.load_model()
@@ -90,7 +185,20 @@ class NPM(LM):
 
         return results
 
-    def get_probabilty(self, topic, question):
+    def get_probabilty(self, topic: str, question: str) -> float:
+        """
+        Compute the probability of a question given a topic using BM25 and the masked language model.
+
+        Args:
+            topic (str): The topic string.
+            question (str): The question string.
+
+        Returns:
+            float: Computed probability.
+
+        Raises:
+            AssertionError: If input assumptions are violated.
+        """
         passages = self.bm25.get_passages(topic, question, k=3)
         passages = [p["text"].strip() for p in passages]
         cache_key = question + "#" + "#".join(passages)
@@ -108,21 +216,6 @@ class NPM(LM):
             if 2 in question_input_ids:
                 question_input_ids = question_input_ids[:question_input_ids.index(2)]
             question_input_ids = question_input_ids[1:]
-
-            '''
-            triples = []
-            prefix = True
-            for i, input_id in enumerate(question_input_ids):
-                if prefix:
-                    if input_id==35: # the end of prefix
-                        prefix = False
-                    continue
-                if input_id in [0, 2] or input_id in self.stopwords:
-                    continue
-                new_question = self.decode(question_input_ids[:i] + [self.mask_id] + question_input_ids[i+1:])
-                prob, vector = self.encode(new_question, gt_input_id=input_id)
-                triples.append((prob, vector, input_id))
-            '''
             triples = []
             batch = []
             gt_input_ids = []

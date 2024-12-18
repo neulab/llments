@@ -1,24 +1,47 @@
+"""
+Atomic Facts Module
+"""
 import json
 import numpy as np
 import re
-import functools
 import string
 import spacy
-import sys
 import nltk
-import openai
 from rank_bm25 import BM25Okapi
 import os
-import time
 from nltk.tokenize import sent_tokenize
+from typing import List, Tuple, Optional, Any
 
 from factscore.openai_lm import OpenAIModel
 
 nltk.download("punkt")
 
+class AtomicFactGenerator:
+    """
+    A generator class to convert AI-generated text into atomic facts.
 
-class AtomicFactGenerator(object):
-    def __init__(self, key_path="key.txt", demon_dir="/factscore_data", gpt3_cache_file=None):
+    Attributes:
+        nlp (spacy.lang.en.English): The spaCy language model for NLP tasks.
+        is_bio (bool): Flag indicating if the generator is in bio mode.
+        demon_path (str): Path to the demons JSON file.
+        openai_lm (OpenAIModel): Instance of the OpenAI language model.
+        demons (Dict[str, List[str]]): Dictionary of demon sentences and their corresponding facts.
+        bm25 (BM25Okapi): BM25 instance for efficient retrieval of top matching demons.
+    """
+    def __init__(
+        self,
+        key_path: str = "key.txt",
+        demon_dir: str = "/factscore_data",
+        gpt3_cache_file: Optional[str] = None,
+    ) -> None:
+        """
+        Initialize the AtomicFactGenerator.
+
+        Args:
+            key_path (str, optional): Path to the OpenAI API key file. Defaults to "key.txt".
+            demon_dir (str, optional): Directory containing the demons JSON file. Defaults to "/factscore_data".
+            gpt3_cache_file (Optional[str], optional): Path to the GPT-3 cache file. Defaults to None.
+        """
         self.nlp = spacy.load("en_core_web_sm")
         self.is_bio = True
         self.demon_path = os.path.join(demon_dir, "demons.json" if self.is_bio else "demons_complex.json")
@@ -32,16 +55,46 @@ class AtomicFactGenerator(object):
         tokenized_corpus = [doc.split(" ") for doc in self.demons.keys()]
         self.bm25 = BM25Okapi(tokenized_corpus)
 
-    def save_cache(self):
+    def save_cache(self) -> None:
+        """
+        Save the OpenAI language model cache.
+        """
         self.openai_lm.save_cache()
 
-    def run(self, generation, cost_estimate=None):
-        """Convert the generation into a set of atomic facts. Return a total words cost if cost_estimate != None."""
+    def run(
+        self, generation: str, cost_estimate: Optional[Any] = None
+    ) -> Tuple[List[Tuple[str, List[str]]], List[int]]:
+        """
+        Convert the generation into a set of atomic facts. Return a total words cost if cost_estimate != None.
+
+        Args:
+            generation (str): The AI-generated text to be processed.
+            cost_estimate (Optional[Any], optional): If provided, returns the total word cost. Defaults to None.
+
+        Returns:
+            Tuple[List[Tuple[str, List[str]]], List[int]]:
+                - List of tuples containing sentences and their corresponding atomic facts.
+                - List of paragraph break indices.
+        """
         assert isinstance(generation, str), "generation must be a string"
         paragraphs = [para.strip() for para in generation.split("\n") if len(para.strip()) > 0]
         return self.get_atomic_facts_from_paragraph(paragraphs, cost_estimate=cost_estimate)
 
-    def get_atomic_facts_from_paragraph(self, paragraphs, cost_estimate=None):
+    def get_atomic_facts_from_paragraph(
+        self, paragraphs: List[str], cost_estimate: Optional[Any] = None
+    ) -> Tuple[List[Tuple[str, List[str]]], List[int]]:
+        """
+        Extract atomic facts from a list of paragraphs.
+
+        Args:
+            paragraphs (List[str]): List of paragraph texts.
+            cost_estimate (Optional[Any], optional): If provided, returns the total word cost. Defaults to None.
+
+        Returns:
+            Tuple[List[Tuple[str, List[str]]], List[int]]:
+                - List of tuples containing sentences and their corresponding atomic facts.
+                - List of paragraph break indices.
+        """
         sentences = []
         para_breaks = []
         for para_idx, paragraph in enumerate(paragraphs):
@@ -92,10 +145,19 @@ class AtomicFactGenerator(object):
 
         return atomic_facts_pairs, para_breaks
 
+    def get_init_atomic_facts_from_sentence(
+        self, sentences: List[str], cost_estimate: Optional[Any] = None
+    ) -> Any:
+        """
+        Get the initial atomic facts from the sentences. Return a total words cost if cost_estimate != None.
 
-    def get_init_atomic_facts_from_sentence(self, sentences, cost_estimate=None):
-        """Get the initial atomic facts from the sentences. Return a total words cost if cost_estimate != None."""
+        Args:
+            sentences (List[str]): List of sentences to process.
+            cost_estimate (Optional[Any], optional): If provided, returns the total word cost. Defaults to None.
 
+        Returns:
+            Any: Either a total word count estimate or a dictionary mapping sentences to their atomic facts.
+        """
         is_bio = self.is_bio
         demons = self.demons
 
@@ -145,14 +207,33 @@ class AtomicFactGenerator(object):
             return atoms
 
 
-def best_demos(query, bm25, demons_sents, k):
+def best_demos(query: str, bm25: BM25Okapi, demons_sents: List[str], k: int) -> List[str]:
+    """
+    Retrieve the top matching demons for a given query using BM25.
+
+    Args:
+        query (str): The query sentence.
+        bm25 (BM25Okapi): The BM25 instance for retrieval.
+        demons_sents (List[str]): List of demon sentences.
+        k (int): Number of top matches to retrieve.
+
+    Returns:
+        List[str]: List of top matching demon sentences.
+    """
     tokenized_query = query.split(" ")
     top_machings = bm25.get_top_n(tokenized_query, demons_sents, k)
     return top_machings
 
+def text_to_sentences(text: str) -> List[str]:
+    """
+    Transform InstructGPT output into a list of sentences.
 
-# transform InstructGPT output into sentences
-def text_to_sentences(text):
+    Args:
+        text (str): The raw output text from InstructGPT.
+
+    Returns:
+        List[str]: List of cleaned sentences extracted from the text.
+    """
     sentences = text.split("- ")[1:]
     sentences = [sent.strip()[:-1] if sent.strip()[-1] == '\n' else sent.strip() for sent in sentences]
     if len(sentences) > 0: 
@@ -162,45 +243,89 @@ def text_to_sentences(text):
         sentences = []
     return sentences
 
+def normalize_answer(s: str) -> str:
+    """
+    Lower text and remove punctuation, articles and extra whitespace.
 
-def normalize_answer(s):
-    """Lower text and remove punctuation, articles and extra whitespace."""
-    def remove_articles(text):
-        regex = re.compile(r'\b(a|an|the)\b', re.UNICODE)
-        return re.sub(regex, ' ', text)
-    def white_space_fix(text):
-        return ' '.join(text.split())
-    def remove_punc(text):
+    Args:
+        s (str): The input string to normalize.
+
+    Returns:
+        str: The normalized string.
+    """
+    def remove_articles(text: str) -> str:
+        regex = re.compile(r"\b(a|an|the)\b", re.UNICODE)
+        return re.sub(regex, " ", text)
+    def white_space_fix(text: str) -> str:
+        return " ".join(text.split())
+    def remove_punc(text: str) -> str:
         exclude = set(string.punctuation)
-        return ''.join(ch for ch in text if ch not in exclude)
-    def lower(text):
+        return "".join(ch for ch in text if ch not in exclude)
+    def lower(text: str) -> str:
         return text.lower()
+    
     return white_space_fix(remove_articles(remove_punc(lower(s))))
 
 MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 MONTHS = [m.lower() for m in MONTHS]
 
-def is_num(text):
+def is_num(text: str) -> bool:
+    """
+    Check if the given text represents an integer number.
+
+    Args:
+        text (str): The text to check.
+
+    Returns:
+        bool: True if the text is an integer, False otherwise.
+    """
     try:
         text = int(text)
         return True
     except Exception:
         return False
 
-def is_date(text):
+def is_date(text: str) -> bool:
+    """
+    Determine if the given text represents a date.
+
+    Args:
+        text (str): The text to evaluate.
+
+    Returns:
+        bool: True if the text is a date, False otherwise.
+    """
     text = normalize_answer(text)
     for token in text.split(" "):
         if (not is_num(token)) and token not in MONTHS:
             return False
     return True
 
-def extract_numeric_values(text):
+def extract_numeric_values(text: str) -> set:
+    """
+    Extract all unique numeric values from the text.
+
+    Args:
+        text (str): The input text.
+
+    Returns:
+        set: A set of unique numeric string values found in the text.
+    """
     pattern = r'\b\d+\b'  # regular expression pattern for integers
     numeric_values = re.findall(pattern, text)  # find all numeric values in the text
     return set([value for value in numeric_values])  # convert the values to float and return as a list
 
+def detect_entities(text: str, nlp: spacy.lang.en.English) -> set:
+    """
+    Detect relevant entities in the text using spaCy's NLP model.
 
-def detect_entities(text, nlp):
+    Args:
+        text (str): The input text to analyze.
+        nlp (spacy.lang.en.English): The spaCy NLP model.
+
+    Returns:
+        set: A set of detected entity strings.
+    """
     doc = nlp(text)
     entities = set()
 
@@ -210,7 +335,6 @@ def detect_entities(text, nlp):
                 entities.add(_text.strip())
         else:
             entities.add(text)
-
 
     for ent in doc.ents:
         # spacy often has errors with other types of entities
@@ -229,8 +353,24 @@ def detect_entities(text, nlp):
 
     return entities
 
-def postprocess_atomic_facts(_atomic_facts, para_breaks, nlp):
+def postprocess_atomic_facts(
+    _atomic_facts: List[Tuple[str, List[str]]],
+    para_breaks: List[int],
+    nlp: spacy.lang.en.English,
+) -> Tuple[List[Tuple[str, List[str]]], List[int]]:
+    """
+    Post-process atomic facts to fix minor issues and ensure consistency.
 
+    Args:
+        _atomic_facts (List[Tuple[str, List[str]]]): Initial list of atomic facts.
+        para_breaks (List[int]): List of paragraph break indices.
+        nlp (spacy.lang.en.English): The spaCy NLP model.
+
+    Returns:
+        Tuple[List[Tuple[str, List[str]]], List[int]]:
+            - Updated list of atomic facts.
+            - Updated list of paragraph break indices.
+    """
     verbs = ["born.", " appointed.", " characterized.", " described.", " known.", " member.", " advocate.", "served.", "elected."]
     permitted_verbs = ["founding member."]
 
@@ -288,19 +428,47 @@ def postprocess_atomic_facts(_atomic_facts, para_breaks, nlp):
 
     return new_atomic_facts, new_para_breaks
 
-def is_integer(s):
+def is_integer(s: str) -> bool:
+    """
+    Check if the given string represents an integer.
+
+    Args:
+        s (str): The string to check.
+
+    Returns:
+        bool: True if the string is an integer, False otherwise.
+    """
     try:
         s = int(s)
         return True
     except Exception:
         return False
 
-def detect_initials(text):
+def detect_initials(text: str) -> List[str]:
+    """
+    Detect initials in the text.
+
+    Args:
+        text (str): The input text.
+
+    Returns:
+        List[str]: List of detected initials.
+    """
     pattern = r"[A-Z]\. ?[A-Z]\."
     match = re.findall(pattern, text)
     return [m for m in match]
 
-def fix_sentence_splitter(curr_sentences, initials):
+def fix_sentence_splitter(curr_sentences: List[str], initials: List[str]) -> List[str]:
+    """
+    Fix sentence splitting issues caused by initials.
+
+    Args:
+        curr_sentences (List[str]): List of current sentences.
+        initials (List[str]): List of detected initials.
+
+    Returns:
+        List[str]: Corrected list of sentences.
+    """
     for initial in initials:
         if not np.any([initial in sent for sent in curr_sentences]):
             alpha1, alpha2 = [t.strip() for t in initial.split(".") if len(t.strip())>0]
@@ -333,8 +501,10 @@ def fix_sentence_splitter(curr_sentences, initials):
             sentences.append(sent)
     return sentences
 
-
-def main():
+def main() -> None:
+    """
+    Main function to demonstrate the usage of AtomicFactGenerator.
+    """
     generator = AtomicFactGenerator("api.key", "demos", gpt3_cache_dir=None)
     atomic_facts, para_breaks = generator.run("Thierry Henry (born 17 August 1977) is a French professional football coach, pundit, and former player. He is considered one of the greatest strikers of all time, and one the greatest players of the Premier League history. He has been named Arsenal F.C's greatest ever player.\n\nHenry made his professional debut with Monaco in 1994 before signing for defending Serie A champions Juventus. However, limited playing time, coupled with disagreements with the club's hierarchy, led to him signing for Premier League club Arsenal for £11 million in 1999.")
 
