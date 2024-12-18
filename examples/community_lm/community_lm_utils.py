@@ -169,8 +169,7 @@ def compute_group_stance_factscore(
     evaluator: SentimentEvaluator,
     input_filename: str,
 ) -> dict[str, float]:
-    """
-    Calculates group sentiment for the democratic and republican parties.
+    """Calculates group sentiment for the democratic and republican parties.
 
     Args:
         input_filename (str): The input filename.
@@ -203,8 +202,7 @@ def compute_group_stance_factscore(
             responses: list[str],
             party_name: str,
         ) -> float:
-            """
-            Calculates sentiment for given responses and party.
+            """Calculates sentiment for given responses and party.
         
             Args:
                 responses (list[str]): A list containing synthetic tweets for all politicians of a given party.
