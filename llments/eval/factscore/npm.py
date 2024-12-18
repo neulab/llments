@@ -2,7 +2,7 @@
 import numpy as np
 import torch
 from collections import defaultdict
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, cast
 from transformers import AutoModelForMaskedLM, AutoTokenizer
 
 from factscore.lm import LM
@@ -19,7 +19,7 @@ def softmax(x: np.ndarray) -> np.ndarray:
     """
     return(np.exp(x - np.max(x)) / np.exp(x - np.max(x)).sum())
 
-class NPM(LM):
+class NPM(cast(type, LM)):
     """NPM Language Model integrating BM25 retrieval with a masked language model.
 
     This class extends the `LM` base class and provides functionalities to tokenize,
@@ -72,6 +72,7 @@ class NPM(LM):
             OSError: If the model cannot be loaded.
         """
         self.model = AutoModelForMaskedLM.from_pretrained("facebook/" + self.model_name)
+        assert self.model is not None
         self.model.cuda()
         self.model.eval()
 
@@ -103,7 +104,9 @@ class NPM(LM):
                 assert input_ids[0]==0 and input_ids[-1]==2
                 all_input_ids[i] = input_ids[1:-1]
         if not padding:
-            return all_input_ids
+            input_ids_tensor = torch.LongTensor(all_input_ids)
+            attention_mask = torch.ones_like(input_ids_tensor)
+            return all_input_ids, attention_mask
         max_length = np.max([len(_ids) for _ids in all_input_ids])    
         _all_input_ids = []
         _all_attention_mask = []   
@@ -123,7 +126,7 @@ class NPM(LM):
         Returns:
             str: Decoded string.
         """
-        return self.tokenizer.decode(input_ids)
+        return cast(str, self.tokenizer.decode(input_ids))
 
     def encode(
         self,
@@ -190,10 +193,10 @@ class NPM(LM):
         passages = self.bm25.get_passages(topic, question, k=3)
         passages = [p["text"].strip() for p in passages]
         cache_key = question + "#" + "#".join(passages)
-        
         if cache_key not in self.cache_dict:
             encoded = self.encode(passages, skip_special_tokens=True)
-            stacked_passage_tokens, stacked_passage_vectors = [], []
+            stacked_passage_tokens: List[int] = []
+            stacked_passage_vectors: List[np.ndarray] = []
             for input_ids, vectors in encoded:
                 stacked_passage_tokens += input_ids
                 if len(vectors)>0:
@@ -223,7 +226,7 @@ class NPM(LM):
             stacked_question_vectors = np.stack([v for _, v, _ in triples], 0)
             all_scores = np.exp(np.inner(stacked_question_vectors, stacked_passage_vectors) / np.sqrt(stacked_passage_vectors.shape[-1]))
 
-            probs = []
+            probs: List[float] = []
             for (softmax_prob, vector, input_id), scores in zip(triples, all_scores):
                 assert len(stacked_passage_tokens)==len(scores)
                 if input_id not in stacked_passage_tokens:
@@ -239,4 +242,4 @@ class NPM(LM):
             self.cache_dict[cache_key] = np.mean(probs)
             self.add_n += 1
 
-        return self.cache_dict[cache_key]
+        return cast(float, self.cache_dict[cache_key])

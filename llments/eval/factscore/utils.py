@@ -6,6 +6,8 @@
 """Utilities Module."""
 import torch
 from torch import nn
+from torch.nn import Module
+from typing import cast
 
 def assert_all_approx_close(a: torch.Tensor, b: torch.Tensor, rtol: float, atol: float, count: int) -> None:
     """Assert that all elements in tensors `a` and `b` are approximately close within the given tolerances.
@@ -50,7 +52,7 @@ def get_memory_footprint(model: nn.Module, return_buffers: bool = True) -> int:
     if return_buffers:
         mem_bufs = sum([buf.nelement() * buf.element_size() for buf in model.buffers()])
         mem = mem + mem_bufs
-    return mem
+    return cast(int, mem)
 
 def ـreplace_linear_with_int8linear(model: nn.Module, modules_to_not_convert: str = "lm_head") -> None:
     """Recursively replace all `nn.Linear` layers in a model with `QuantizedLinearInt8`, except for specified modules.
@@ -70,7 +72,7 @@ def ـreplace_linear_with_int8linear(model: nn.Module, modules_to_not_convert: s
             model._modules[name] = QuantizedLinearInt8(linear_layer=module)
     return
 
-class QuantizedLinearInt8(nn.Module):
+class QuantizedLinearInt8(Module):
     """A simple but effictive implmenetion of Int8 quantization for linear layers.
     
     The weights are quantized and stored as Int8, which saves ~50% of the gpu memory.
@@ -154,8 +156,8 @@ def convert_model_to_int8_on_gpu(model: nn.Module, device: str) -> nn.Module:
     memory_after_quantization = get_memory_footprint(model)  # without lm_head
 
     saving = round(100 * memory_after_quantization/memory_before_quantization)
-    memory_before_quantization = round(memory_before_quantization / 2**30, 2)  # rounding for printing
-    memory_after_quantization = round(memory_after_quantization / 2**30, 2)  # rounding for printing
+    memory_before_quantization: float = round(memory_before_quantization / 2**30, 2)  # rounding for printing
+    memory_after_quantization: float = round(memory_after_quantization / 2**30, 2)  # rounding for printing
 
     print(f'Quantization memory - before: {memory_before_quantization} GB, after: {memory_after_quantization} GB ({saving}% of the size before)')
     return model
