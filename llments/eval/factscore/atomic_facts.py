@@ -1,6 +1,4 @@
-"""
-Atomic Facts Module
-"""
+"""Atomic Facts Module."""
 import json
 import numpy as np
 import re
@@ -17,8 +15,7 @@ from factscore.openai_lm import OpenAIModel
 nltk.download("punkt")
 
 class AtomicFactGenerator:
-    """
-    A generator class to convert AI-generated text into atomic facts.
+    """A generator class to convert AI-generated text into atomic facts.
 
     Attributes:
         nlp (spacy.lang.en.English): The spaCy language model for NLP tasks.
@@ -34,8 +31,7 @@ class AtomicFactGenerator:
         demon_dir: str = "/factscore_data",
         gpt3_cache_file: Optional[str] = None,
     ) -> None:
-        """
-        Initialize the AtomicFactGenerator.
+        """Initialize the AtomicFactGenerator.
 
         Args:
             key_path (str, optional): Path to the OpenAI API key file. Defaults to "key.txt".
@@ -56,16 +52,13 @@ class AtomicFactGenerator:
         self.bm25 = BM25Okapi(tokenized_corpus)
 
     def save_cache(self) -> None:
-        """
-        Save the OpenAI language model cache.
-        """
+        """Save the OpenAI language model cache."""
         self.openai_lm.save_cache()
 
     def run(
         self, generation: str, cost_estimate: Optional[Any] = None
     ) -> Tuple[List[Tuple[str, List[str]]], List[int]]:
-        """
-        Convert the generation into a set of atomic facts. Return a total words cost if cost_estimate != None.
+        """Convert the generation into a set of atomic facts. Return a total words cost if cost_estimate != None.
 
         Args:
             generation (str): The AI-generated text to be processed.
@@ -83,8 +76,7 @@ class AtomicFactGenerator:
     def get_atomic_facts_from_paragraph(
         self, paragraphs: List[str], cost_estimate: Optional[Any] = None
     ) -> Tuple[List[Tuple[str, List[str]]], List[int]]:
-        """
-        Extract atomic facts from a list of paragraphs.
+        """Extract atomic facts from a list of paragraphs.
 
         Args:
             paragraphs (List[str]): List of paragraph texts.
@@ -148,8 +140,7 @@ class AtomicFactGenerator:
     def get_init_atomic_facts_from_sentence(
         self, sentences: List[str], cost_estimate: Optional[Any] = None
     ) -> Any:
-        """
-        Get the initial atomic facts from the sentences. Return a total words cost if cost_estimate != None.
+        """Get the initial atomic facts from the sentences. Return a total words cost if cost_estimate != None.
 
         Args:
             sentences (List[str]): List of sentences to process.
@@ -208,8 +199,7 @@ class AtomicFactGenerator:
 
 
 def best_demos(query: str, bm25: BM25Okapi, demons_sents: List[str], k: int) -> List[str]:
-    """
-    Retrieve the top matching demons for a given query using BM25.
+    """Retrieve the top matching demons for a given query using BM25.
 
     Args:
         query (str): The query sentence.
@@ -225,8 +215,7 @@ def best_demos(query: str, bm25: BM25Okapi, demons_sents: List[str], k: int) -> 
     return top_machings
 
 def text_to_sentences(text: str) -> List[str]:
-    """
-    Transform InstructGPT output into a list of sentences.
+    """Transform InstructGPT output into a list of sentences.
 
     Args:
         text (str): The raw output text from InstructGPT.
@@ -244,8 +233,7 @@ def text_to_sentences(text: str) -> List[str]:
     return sentences
 
 def normalize_answer(s: str) -> str:
-    """
-    Lower text and remove punctuation, articles and extra whitespace.
+    """Lower text and remove punctuation, articles and extra whitespace.
 
     Args:
         s (str): The input string to normalize.
@@ -270,8 +258,7 @@ MONTHS = ["January", "February", "March", "April", "May", "June", "July", "Augus
 MONTHS = [m.lower() for m in MONTHS]
 
 def is_num(text: str) -> bool:
-    """
-    Check if the given text represents an integer number.
+    """Check if the given text represents an integer number.
 
     Args:
         text (str): The text to check.
@@ -286,8 +273,7 @@ def is_num(text: str) -> bool:
         return False
 
 def is_date(text: str) -> bool:
-    """
-    Determine if the given text represents a date.
+    """Determine if the given text represents a date.
 
     Args:
         text (str): The text to evaluate.
@@ -302,8 +288,7 @@ def is_date(text: str) -> bool:
     return True
 
 def extract_numeric_values(text: str) -> set:
-    """
-    Extract all unique numeric values from the text.
+    """Extract all unique numeric values from the text.
 
     Args:
         text (str): The input text.
@@ -316,8 +301,7 @@ def extract_numeric_values(text: str) -> set:
     return set([value for value in numeric_values])  # convert the values to float and return as a list
 
 def detect_entities(text: str, nlp: spacy.lang.en.English) -> set:
-    """
-    Detect relevant entities in the text using spaCy's NLP model.
+    """Detect relevant entities in the text using spaCy's NLP model.
 
     Args:
         text (str): The input text to analyze.
@@ -358,8 +342,7 @@ def postprocess_atomic_facts(
     para_breaks: List[int],
     nlp: spacy.lang.en.English,
 ) -> Tuple[List[Tuple[str, List[str]]], List[int]]:
-    """
-    Post-process atomic facts to fix minor issues and ensure consistency.
+    """Post-process atomic facts to fix minor issues and ensure consistency.
 
     Args:
         _atomic_facts (List[Tuple[str, List[str]]]): Initial list of atomic facts.
@@ -429,8 +412,7 @@ def postprocess_atomic_facts(
     return new_atomic_facts, new_para_breaks
 
 def is_integer(s: str) -> bool:
-    """
-    Check if the given string represents an integer.
+    """Check if the given string represents an integer.
 
     Args:
         s (str): The string to check.
@@ -445,8 +427,7 @@ def is_integer(s: str) -> bool:
         return False
 
 def detect_initials(text: str) -> List[str]:
-    """
-    Detect initials in the text.
+    """Detect initials in the text.
 
     Args:
         text (str): The input text.
@@ -459,8 +440,7 @@ def detect_initials(text: str) -> List[str]:
     return [m for m in match]
 
 def fix_sentence_splitter(curr_sentences: List[str], initials: List[str]) -> List[str]:
-    """
-    Fix sentence splitting issues caused by initials.
+    """Fix sentence splitting issues caused by initials.
 
     Args:
         curr_sentences (List[str]): List of current sentences.
@@ -502,9 +482,7 @@ def fix_sentence_splitter(curr_sentences: List[str], initials: List[str]) -> Lis
     return sentences
 
 def main() -> None:
-    """
-    Main function to demonstrate the usage of AtomicFactGenerator.
-    """
+    """Main function to demonstrate the usage of AtomicFactGenerator."""
     generator = AtomicFactGenerator("api.key", "demos", gpt3_cache_dir=None)
     atomic_facts, para_breaks = generator.run("Thierry Henry (born 17 August 1977) is a French professional football coach, pundit, and former player. He is considered one of the greatest strikers of all time, and one the greatest players of the Premier League history. He has been named Arsenal F.C's greatest ever player.\n\nHenry made his professional debut with Monaco in 1994 before signing for defending Serie A champions Juventus. However, limited playing time, coupled with disagreements with the club's hierarchy, led to him signing for Premier League club Arsenal for £11 million in 1999.")
 

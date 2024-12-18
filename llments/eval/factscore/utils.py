@@ -3,15 +3,12 @@
 #
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
-"""
-Utilities Module
-"""
+"""Utilities Module."""
 import torch
 from torch import nn
 
 def assert_all_approx_close(a: torch.Tensor, b: torch.Tensor, rtol: float, atol: float, count: int) -> None:
-    """
-    Assert that all elements in tensors `a` and `b` are approximately close within the given tolerances.
+    """Assert that all elements in tensors `a` and `b` are approximately close within the given tolerances.
 
     If more than `count` elements are not close, print a message and perform an assertion.
 
@@ -25,7 +22,6 @@ def assert_all_approx_close(a: torch.Tensor, b: torch.Tensor, rtol: float, atol:
     Raises:
         AssertionError: If the number of non-close elements exceeds `count`.
     """
-
     idx = torch.isclose(a.float(), b.float(), rtol, atol)
     sumval = (idx==0).sum().item()
     if sumval > count:
@@ -36,10 +32,10 @@ def assert_all_approx_close(a: torch.Tensor, b: torch.Tensor, rtol: float, atol:
             print(e)
 
 def get_memory_footprint(model: nn.Module, return_buffers: bool = True) -> int:
-    """
-    Get the memory footprint of a model. This will return the memory footprint of the current model in bytes.
+    """Get the memory footprint of a model. This will return the memory footprint of the current model in bytes.
+    
     Useful to benchmark the memory footprint of the current model and design some tests. Solution inspired from the
-    PyTorch discussions: https://discuss.pytorch.org/t/gpu-memory-that-model-uses/56822/2
+    PyTorch discussions: https://discuss.pytorch.org/t/gpu-memory-that-model-uses/56822/2.
 
     Args:
         model (nn.Module): The PyTorch model to evaluate.
@@ -57,8 +53,7 @@ def get_memory_footprint(model: nn.Module, return_buffers: bool = True) -> int:
     return mem
 
 def ـreplace_linear_with_int8linear(model: nn.Module, modules_to_not_convert: str = "lm_head") -> None:
-    """
-    Recursively replace all `nn.Linear` layers in a model with `QuantizedLinearInt8`, except for specified modules.
+    """Recursively replace all `nn.Linear` layers in a model with `QuantizedLinearInt8`, except for specified modules.
 
     Args:
         model (nn.Module): The PyTorch model in which to replace linear layers.
@@ -76,8 +71,8 @@ def ـreplace_linear_with_int8linear(model: nn.Module, modules_to_not_convert: s
     return
 
 class QuantizedLinearInt8(nn.Module):
-    """
-    A simple but effictive implmenetion of Int8 quantization for linear layers.
+    """A simple but effictive implmenetion of Int8 quantization for linear layers.
+    
     The weights are quantized and stored as Int8, which saves ~50% of the gpu memory.
     During the forwared pass, the weights are de-quantized back to fp16 to do multiplication.
 
@@ -98,8 +93,7 @@ class QuantizedLinearInt8(nn.Module):
         bias (Optional[torch.Tensor]): Bias tensor, if present.
     """
     def __init__(self, linear_layer: nn.Linear) -> None:
-        """
-        Initialize the QuantizedLinearInt8 layer.
+        """Initialize the QuantizedLinearInt8 layer.
 
         Args:
             linear_layer (nn.Linear): The original linear layer to be quantized.
@@ -122,8 +116,7 @@ class QuantizedLinearInt8(nn.Module):
             )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        Forward pass of the quantized linear layer.
+        """Forward pass of the quantized linear layer.
 
         Args:
             x (torch.Tensor): Input tensor.
@@ -136,8 +129,7 @@ class QuantizedLinearInt8(nn.Module):
 
 
 def convert_model_to_int8_on_gpu(model: nn.Module, device: str) -> nn.Module:
-    """
-    Quantize a PyTorch model to int8 and move it to the specified GPU device.
+    """Quantize a PyTorch model to int8 and move it to the specified GPU device.
 
     Args:
         model (nn.Module): The PyTorch model to be quantized.

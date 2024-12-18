@@ -1,6 +1,4 @@
-"""
-FactScore Scoring Module
-"""
+"""FactScore Scoring Module."""
 import argparse
 import string
 import json
@@ -18,8 +16,7 @@ from factscore.openai_lm import OpenAIModel
 from factscore.retrieval import DocDB, Retrieval
 
 class FactScorer:
-    """
-    FactScorer Class
+    """FactScorer Class.
 
     This class integrates various language models and retrieval mechanisms to evaluate the factual accuracy
     of generated text. It supports different configurations, including retrieval-based models with ChatGPT,
@@ -52,8 +49,7 @@ class FactScorer:
         abstain_detection_type: Optional[str] = None,
         batch_size: int = 256,
     ) -> None:
-        """
-        Initialize the FactScorer instance.
+        """Initialize the FactScorer instance.
 
         Args:
             model_name (str, optional): Configuration of the language model to use.
@@ -108,8 +104,7 @@ class FactScorer:
             self.lm = None
 
     def save_cache(self) -> None:
-        """
-        Save caches for the language model, NPM instances, and retrieval instances.
+        """Save caches for the language model, NPM instances, and retrieval instances.
 
         This method ensures that any new entries added to the caches are persisted to their respective
         cache files to optimize performance and avoid redundant computations.
@@ -128,8 +123,7 @@ class FactScorer:
         db_path: Optional[str] = None,
         data_path: Optional[str] = None,
     ) -> None:
-        """
-        Register a new knowledge source for retrieval.
+        """Register a new knowledge source for retrieval.
 
         This method initializes a new `DocDB` and `Retrieval` instance for the specified knowledge source.
         If NPM is included in the model configuration, it also initializes an `NPM` instance for the knowledge source.
@@ -170,8 +164,7 @@ class FactScorer:
         task: str,
         model: str,
     ) -> None:
-        """
-        Print the estimated cost of OpenAI API usage based on the number of tokens.
+        """Print the estimated cost of OpenAI API usage based on the number of tokens.
 
         Args:
             total_words (int): Total number of words to be processed.
@@ -207,8 +200,7 @@ class FactScorer:
         knowledge_source: Optional[str] = None,
         verbose: bool = False,
     ) -> Dict[str, Any]:
-        """
-        Compute the factual accuracy score for the provided generations based on topics.
+        """Compute the factual accuracy score for the provided generations based on topics.
 
         This method retrieves relevant passages for each topic, generates or uses provided atomic facts,
         evaluates whether the generated content is supported by the retrieved knowledge, and computes
@@ -333,8 +325,7 @@ class FactScorer:
         knowledge_source: str,
         cost_estimate: Optional[str] = None,
     ) -> Union[List[Dict[str, bool]], int]:
-        """
-        Compute support scores for each atomic fact based on the knowledge source.
+        """Compute support scores for each atomic fact based on the knowledge source.
 
         This internal method evaluates whether each atomic fact is supported by the retrieved passages
         using the configured language model and NPM (if applicable).

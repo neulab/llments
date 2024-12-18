@@ -1,14 +1,11 @@
-"""
-LM (Language Model) Base Class Module
-"""
+"""LM (Language Model) Base Class Module."""
 import pickle
 import os
 import time
 from typing import Dict, Any
 
 class LM(object):
-    """
-    LM (Language Model) Base Class
+    """LM (Language Model) Base Class.
 
     This class serves as a base for language models, managing caching of generated outputs
     and defining the interface for loading models and generating text. It handles the storage
@@ -21,8 +18,7 @@ class LM(object):
         add_n (int): Counter for the number of new cache entries added.
     """
     def __init__(self, cache_file: str) -> None:
-        """
-        Initialize the LM (Language Model) instance.
+        """Initialize the LM (Language Model) instance.
 
         Args:
             cache_file (str): Path to the cache file for storing generated outputs.
@@ -33,8 +29,7 @@ class LM(object):
         self.add_n = 0
 
     def load_model(self) -> None:
-        """
-        Load the language model and put it as self.model
+        """Load the language model and put it as self.model.
 
         Raises:
             NotImplementedError: If the method is not implemented by a subclass.
@@ -48,8 +43,7 @@ class LM(object):
         max_sequence_length: int = 2048,
         max_output_length: int = 128,
     ) -> Any:
-        """
-        Generate text based on the input prompt.
+        """Generate text based on the input prompt.
 
         Args:
             prompt (str): The input prompt to generate text from.
@@ -79,9 +73,7 @@ class LM(object):
         return generated
 
     def save_cache(self) -> None:
-        """
-        Save the current cache to the cache file.
-        """
+        """Save the current cache to the cache file."""
         if self.add_n == 0:
             return
 
@@ -93,8 +85,7 @@ class LM(object):
             pickle.dump(self.cache_dict, f)
 
     def load_cache(self, allow_retry: bool = True) -> Dict[str, Any]:
-        """
-        Load the cache from the cache file.
+        """Load the cache from the cache file.
 
         Args:
             allow_retry (bool, optional): Whether to retry loading the cache in case of errors.
@@ -120,6 +111,3 @@ class LM(object):
         else:
             cache = {}
         return cache
-
-
-

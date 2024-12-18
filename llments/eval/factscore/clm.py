@@ -3,9 +3,7 @@
 #
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
-"""
-CLM (Causal Language Model) Module
-"""
+"""CLM (Causal Language Model) Module."""
 import numpy as np
 import torch
 from tqdm import tqdm
@@ -18,8 +16,7 @@ from factscore.utils import convert_model_to_int8_on_gpu
 from factscore.lm import LM
 
 class CLM(LM):
-    """
-    CLM (Causal Language Model) Class
+    """CLM (Causal Language Model) Class.
 
     This class extends the `LM` base class to provide functionalities specific to causal language modeling.
     It leverages pre-trained models from Hugging Face's Transformers library, enabling text generation
@@ -38,8 +35,7 @@ class CLM(LM):
         model_dir: str,
         cache_file: Optional[str] = None,
     ) -> None:
-        """
-        Initialize the CLM (Causal Language Model) instance.
+        """Initialize the CLM (Causal Language Model) instance.
 
         Args:
             model_name (str): Name of the pre-trained language model.
@@ -53,8 +49,7 @@ class CLM(LM):
             super().__init__(cache_file)
 
     def load_model(self) -> None:
-        """
-        Load the pre-trained causal language model and its tokenizer.
+        """Load the pre-trained causal language model and its tokenizer.
 
         This method loads the model from the specified directory, converts it to int8 precision
         for efficient GPU utilization, and initializes the tokenizer.
@@ -75,8 +70,7 @@ class CLM(LM):
         end_if_second_newline: bool = False,
         verbose: bool = False,
     ) -> Union[Tuple[str, np.ndarray], Tuple[List[str], List[np.ndarray]]]:
-        """
-        Generate text based on input prompts using the causal language model.
+        """Generate text based on input prompts using the causal language model.
 
         Args:
             prompts (Union[str, List[str]]): Single prompt string or a list of prompt strings.

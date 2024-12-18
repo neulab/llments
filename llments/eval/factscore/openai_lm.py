@@ -1,6 +1,4 @@
-"""
-OpenAI Model Module
-"""
+"""OpenAI Model Module."""
 from factscore.lm import LM
 import openai
 import sys
@@ -11,8 +9,7 @@ import logging
 from typing import Optional, List, Tuple, Dict, Any
 
 class OpenAIModel(LM):
-    """
-    OpenAI Language Model Class
+    """OpenAI Language Model Class.
 
     This class extends the `LM` base class to interface with OpenAI's language models, including ChatGPT
     and InstructGPT. It handles API key management, text generation via the OpenAI API, and caching of
@@ -30,8 +27,7 @@ class OpenAIModel(LM):
         cache_file: Optional[str] = None,
         key_path: str = "api.key"
     ) -> None:
-        """
-        Initialize the OpenAIModel instance.
+        """Initialize the OpenAIModel instance.
 
         Args:
             model_name (str): Name of the OpenAI model to use (e.g., "ChatGPT", "InstructGPT").
@@ -46,8 +42,7 @@ class OpenAIModel(LM):
         super().__init__(cache_file)
 
     def load_model(self) -> None:
-        """
-        Load the OpenAI API key and set the model name.
+        """Load the OpenAI API key and set the model name.
 
         This method reads the API key from the specified file and configures the OpenAI API client.
         It also sets the `model` attribute to the specified `model_name`.
@@ -68,8 +63,7 @@ class OpenAIModel(LM):
         max_sequence_length: int = 2048,
         max_output_length: int = 128
     ) -> Tuple[str, Dict[str, Any]]:
-        """
-        Generate text using the OpenAI API based on the input prompt.
+        """Generate text using the OpenAI API based on the input prompt.
 
         This method handles caching of generated outputs and interacts with the OpenAI API to produce
         text completions. It supports different models like ChatGPT and InstructGPT.
@@ -115,8 +109,7 @@ def call_ChatGPT(
     temp: float = 0.7,
     verbose: bool = False
 ) -> Dict[str, Any]:
-    """
-    Call the OpenAI ChatCompletion API to generate a response based on the input message.
+    """Call the OpenAI ChatCompletion API to generate a response based on the input message.
 
     Args:
         message (List[Dict[str, str]]): The input message(s) to send to the ChatCompletion API.
@@ -164,8 +157,7 @@ def call_GPT3(
     echo: bool = False,
     verbose: bool = False
 ) -> Dict[str, Any]:
-    """
-    Call the OpenAI GPT-3 API to generate a response based on the input prompt.
+    """Call the OpenAI GPT-3 API to generate a response based on the input prompt.
 
     This function handles API rate limits by implementing an exponential backoff retry mechanism.
     It continues to retry until a successful response is received or a critical error occurs.

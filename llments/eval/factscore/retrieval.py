@@ -1,6 +1,4 @@
-"""
-Document Database and Retrieval Module
-"""
+"""Document Database and Retrieval Module."""
 import json
 import time
 import os
@@ -17,8 +15,7 @@ SPECIAL_SEPARATOR = "####SPECIAL####SEPARATOR####"
 MAX_LENGTH = 256
 
 class DocDB(object):
-    """
-    SQLite-backed Document Storage.
+    """SQLite-backed Document Storage.
 
     Implements get_doc_text(doc_id).
 
@@ -28,8 +25,7 @@ class DocDB(object):
         add_n (int): Counter for the number of new documents added to the cache.
     """    
     def __init__(self, db_path: Optional[str] = None, data_path: Optional[str] = None) -> None:
-        """
-        Initialize the DocDB instance.
+        """Initialize the DocDB instance.
 
         Connects to the SQLite database at `db_path`. If the database is empty, it builds the database
         from the provided `data_path`.
@@ -54,22 +50,18 @@ class DocDB(object):
             self.build_db(self.db_path, data_path)
 
     def __enter__(self) -> 'DocDB':
-        """
-        Enter the runtime context related to this object.
+        """Enter the runtime context related to this object.
 
         Returns:
             DocDB: The DocDB instance itself.
         """
         return self
     def __exit__(self, *args) -> None:
-        """
-        Exit the runtime context and close the database connection.
-        """
+        """Exit the runtime context and close the database connection."""
         self.close()
 
     def path(self) -> str:
-        """
-        Return the path to the file that backs this database.
+        """Return the path to the file that backs this database.
 
         Returns:
             str: Path to the SQLite database file.        
@@ -77,14 +69,11 @@ class DocDB(object):
         return self.path
 
     def close(self) -> None:
-        """
-        Close the connection to the database.
-        """
+        """Close the connection to the database."""
         self.connection.close()
 
     def build_db(self, db_path: str, data_path: str) -> None:
-        """
-        Build the SQLite database from raw JSON data.
+        """Build the SQLite database from raw JSON data.
 
         This method reads raw data from `data_path`, processes it using a tokenizer, and inserts
         the documents into the SQLite database.
@@ -147,8 +136,7 @@ class DocDB(object):
         self.connection.close()
 
     def get_text_from_title(self, title: str) -> List[Dict[str, str]]:
-        """
-        Fetch the raw text of the doc for 'doc_id'.
+        """Fetch the raw text of the doc for 'doc_id'.
 
         Args:
             title (str): The title of the document to fetch.
@@ -170,8 +158,7 @@ class DocDB(object):
         return results
 
 class Retrieval(object):
-    """
-    Document Retrieval Class.
+    """Document Retrieval Class.
 
     Attributes:
         db (DocDB): Instance of the DocDB class for accessing documents.
@@ -193,8 +180,7 @@ class Retrieval(object):
         retrieval_type: str = "gtr-t5-large",
         batch_size: Optional[int] = None
     ) -> None:
-        """
-        Initialize the Retrieval instance.
+        """Initialize the Retrieval instance.
 
         Args:
             db (DocDB): Instance of the DocDB class for accessing documents.
@@ -221,8 +207,7 @@ class Retrieval(object):
         self.add_n_embed = 0
 
     def load_encoder(self) -> None:
-        """
-        Load the sentence transformer encoder for embedding-based retrieval.
+        """Load the sentence transformer encoder for embedding-based retrieval.
 
         Raises:
             ValueError: If `batch_size` is not set for transformer-based retrieval.
@@ -234,9 +219,7 @@ class Retrieval(object):
         assert self.batch_size is not None
     
     def load_cache(self) -> None:
-        """
-        Load retrieval and embedding caches from the specified cache files.
-        """
+        """Load retrieval and embedding caches from the specified cache files."""
         if os.path.exists(self.cache_path):
             with open(self.cache_path, "r") as f:
                 self.cache = json.load(f)
@@ -249,9 +232,7 @@ class Retrieval(object):
             self.embed_cache = {}
     
     def save_cache(self) -> None:
-        """
-        Save retrieval and embedding caches to the specified cache files.
-        """
+        """Save retrieval and embedding caches to the specified cache files."""
         if self.add_n > 0:
             if os.path.exists(self.cache_path):
                 with open(self.cache_path, "r") as f:
@@ -277,8 +258,7 @@ class Retrieval(object):
         passages: List[Dict[str, str]],
         k: int
     ) -> List[Dict[str, str]]:
-        """
-        Retrieve top-k passages using BM25.
+        """Retrieve top-k passages using BM25.
 
         Args:
             topic (str): The topic associated with the query.
@@ -306,8 +286,7 @@ class Retrieval(object):
         passages: List[Dict[str, str]],
         k: int
     ) -> List[Dict[str, str]]:
-        """
-        Retrieve top-k passages using transformer-based retrieval (e.g., GTR).
+        """Retrieve top-k passages using transformer-based retrieval (e.g., GTR).
 
         Args:
             topic (str): The topic associated with the query.
@@ -340,8 +319,7 @@ class Retrieval(object):
         question: str,
         k: int
     ) -> List[Dict[str, str]]:
-        """
-        Retrieve top-k passages based on the topic and question using the specified retrieval method.
+        """Retrieve top-k passages based on the topic and question using the specified retrieval method.
 
         Args:
             topic (str): The topic associated with the query.
@@ -365,8 +343,3 @@ class Retrieval(object):
         
             
         return self.cache[cache_key]
-
-        
-        
-
-

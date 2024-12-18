@@ -1,6 +1,4 @@
-"""
-NPM Language Model Module
-"""
+"""NPM Language Model Module."""
 import numpy as np
 import torch
 from collections import defaultdict
@@ -11,8 +9,7 @@ from factscore.lm import LM
 from factscore.retrieval import Retrieval
 
 def softmax(x: np.ndarray) -> np.ndarray:
-    """
-    Compute the softmax of a given NumPy array.
+    """Compute the softmax of a given NumPy array.
 
     Args:
         x (np.ndarray): Input array.
@@ -23,8 +20,7 @@ def softmax(x: np.ndarray) -> np.ndarray:
     return(np.exp(x - np.max(x)) / np.exp(x - np.max(x)).sum())
 
 class NPM(LM):
-    """
-    NPM Language Model integrating BM25 retrieval with a masked language model.
+    """NPM Language Model integrating BM25 retrieval with a masked language model.
 
     This class extends the `LM` base class and provides functionalities to tokenize,
     encode, decode, and compute probabilities based on input topics and questions.
@@ -44,8 +40,7 @@ class NPM(LM):
         model_name: str,
         cache_file: str,
     ) -> None:
-        """
-        Initialize the NPM language model.
+        """Initialize the NPM language model.
 
         Args:
             bm25 (Retrieval): BM25 retrieval instance for fetching relevant passages.
@@ -71,8 +66,7 @@ class NPM(LM):
         super().__init__(cache_file=cache_file)
 
     def load_model(self) -> None:
-        """
-        Load the pre-trained masked language model and move it to GPU.
+        """Load the pre-trained masked language model and move it to GPU.
 
         Raises:
             OSError: If the model cannot be loaded.
@@ -82,9 +76,7 @@ class NPM(LM):
         self.model.eval()
 
     def save_cache(self) -> None:
-        """
-        Save the cache for both the language model and BM25 retrieval.
-        """
+        """Save the cache for both the language model and BM25 retrieval."""
         super().save_cache()
         self.bm25.save_cache()
 
@@ -94,8 +86,7 @@ class NPM(LM):
         skip_special_tokens: bool = False,
         padding: bool = True,
     ) -> Tuple[torch.LongTensor, torch.LongTensor]:
-        """
-        Tokenize a list of texts with optional skipping of special tokens and padding.
+        """Tokenize a list of texts with optional skipping of special tokens and padding.
 
         Args:
             texts (List[str]): List of text strings to tokenize.
@@ -124,8 +115,7 @@ class NPM(LM):
         return torch.LongTensor(_all_input_ids), torch.LongTensor(_all_attention_mask)
 
     def decode(self, input_ids: List[int]) -> str:
-        """
-        Decode a list of input IDs back into a string.
+        """Decode a list of input IDs back into a string.
 
         Args:
             input_ids (List[int]): List of token IDs.
@@ -141,8 +131,7 @@ class NPM(LM):
         skip_special_tokens: bool = False,
         gt_input_ids: Optional[List[int]] = None,
     ) -> List[Tuple[float, np.ndarray]]:
-        """
-        Encode a list of texts into probabilities and hidden states.
+        """Encode a list of texts into probabilities and hidden states.
 
         Args:
             texts (List[str]): List of text strings to encode.
@@ -186,8 +175,7 @@ class NPM(LM):
         return results
 
     def get_probabilty(self, topic: str, question: str) -> float:
-        """
-        Compute the probability of a question given a topic using BM25 and the masked language model.
+        """Compute the probability of a question given a topic using BM25 and the masked language model.
 
         Args:
             topic (str): The topic string.
@@ -252,7 +240,3 @@ class NPM(LM):
             self.add_n += 1
 
         return self.cache_dict[cache_key]
-
-
-
-        

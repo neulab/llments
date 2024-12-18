@@ -1,6 +1,4 @@
-"""
-Download Data Module
-"""
+"""Download Data Module."""
 import argparse
 import os
 import subprocess
@@ -10,8 +8,7 @@ import transformers
 from typing import Tuple
 
 def download_file(_id: str, dest: str, cache_dir: str) -> None:
-    """
-    Download a file from a given URL or Google Drive ID to the specified destination.
+    """Download a file from a given URL or Google Drive ID to the specified destination.
 
     Args:
         _id (str): The URL or Google Drive ID of the file to download.
@@ -66,8 +63,7 @@ def smart_tokenizer_and_embedding_resize(
     tokenizer: transformers.PreTrainedTokenizer,
     model: transformers.PreTrainedModel,
 ) -> None:
-    """
-    Resize tokenizer and embedding.
+    """Resize tokenizer and embedding.
 
     Note: This is the unoptimized version that may make your embedding size not be divisible by 64.
 
@@ -98,8 +94,8 @@ def recover_instruct_llama(
     device: str = "cpu",
     test_recovered_model: bool = False
 ) -> Tuple[transformers.PreTrainedModel, transformers.PreTrainedTokenizer]:
-    """
-    Recover an instruct LLaMA model by adding state dictionaries from a raw model to a recovered model.
+    """Recover an instruct LLaMA model by adding state dictionaries from a raw model to a recovered model.
+    
     Heavily adapted from https://github.com/tatsu-lab/stanford_alpaca/blob/main/weight_diff.py.
 
     Args:

@@ -1,6 +1,4 @@
-"""
-Abstain Detection Module
-"""
+"""Abstain Detection Module."""
 import numpy as np
 import re
 from typing import List
@@ -20,8 +18,7 @@ invalid_ppl_mentions: List[str] = [
 ]
 
 def remove_citation(text: str) -> str:
-    """
-    Remove citation references and fix specific starting phrases in the text.
+    """Remove citation references and fix specific starting phrases in the text.
 
     Args:
         text (str): The input text from which citations are to be removed.
@@ -35,8 +32,7 @@ def remove_citation(text: str) -> str:
     return text
 
 def is_invalid_ppl(text: str) -> bool:
-    """
-    Check if the text starts with any invalid phrases indicating insufficient information.
+    """Check if the text starts with any invalid phrases indicating insufficient information.
 
     Args:
         text (str): The input text to be checked.
@@ -47,8 +43,7 @@ def is_invalid_ppl(text: str) -> bool:
     return np.any([text.lower().startswith(mention.lower()) for mention in invalid_ppl_mentions])
 
 def is_invalid_paragraph_ppl(text: str) -> bool:
-    """
-    Determine if a paragraph is invalid based on its content.
+    """Determine if a paragraph is invalid based on its content.
 
     A paragraph is considered invalid if it is empty or contains any invalid phrases.
 
@@ -61,8 +56,7 @@ def is_invalid_paragraph_ppl(text: str) -> bool:
     return len(text.strip())==0 or np.any([mention.lower() in text.lower() for mention in invalid_ppl_mentions])
 
 def perplexity_ai_abstain_detect(generation: str) -> bool:
-    """
-    Detect if the AI generation should abstain based on perplexity analysis.
+    """Detect if the AI generation should abstain based on perplexity analysis.
 
     This function removes citations from the generation, checks if it starts with any invalid phrases,
     and verifies that all paragraphs contain valid information.
@@ -88,8 +82,7 @@ def perplexity_ai_abstain_detect(generation: str) -> bool:
         return False
 
 def generic_abstain_detect(generation: str) -> bool:
-    """
-    Detect if the generation should abstain based on generic abstain phrases.
+    """Detect if the generation should abstain based on generic abstain phrases.
 
     Args:
         generation (str): The generated text to be analyzed.
@@ -100,8 +93,7 @@ def generic_abstain_detect(generation: str) -> bool:
     return generation.startswith("I'm sorry") or "provide more" in generation
 
 def is_response_abstained(generation: str, fn_type: str) -> bool:
-    """
-    Determine if the response should be abstained based on the specified detection function type.
+    """Determine if the response should be abstained based on the specified detection function type.
 
     Args:
         generation (str): The generated text to be analyzed.
