@@ -101,7 +101,7 @@ class CLM(LM):
         if verbose:
             input_ids = tqdm(input_ids)
 
-        generations: List[<str>] = []
+        generations: List[str] = []
         scores = []
         for curr_input_ids in input_ids:
             if len(curr_input_ids) > max_sequence_length - max_output_length:
