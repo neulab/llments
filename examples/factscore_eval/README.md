@@ -1,4 +1,4 @@
-# FActScore: Fine-grained Atomic Evaluation of Factual Precision in Long Form Text Generation
+# FActScore
 
 This is a replication of the experiments from
 [FActScore: Fine-grained Atomic Evaluation of Factual Precision in Long Form
@@ -63,7 +63,8 @@ If you use this example, we would appreciate if you acknowledge
 
 ```bibtex
 @inproceedings{min-etal-2023-factscore,
-    title = "{FA}ct{S}core: Fine-grained Atomic Evaluation of Factual Precision in Long Form Text Generation",
+    title = "{FA}ct{S}core: Fine-grained Atomic Evaluation of Factual
+    Precision in Long Form Text Generation",
     author = "Min, Sewon  and
       Krishna, Kalpesh  and
       Lyu, Xinxi  and
@@ -73,7 +74,8 @@ If you use this example, we would appreciate if you acknowledge
       Iyyer, Mohit  and
       Zettlemoyer, Luke  and
       Hajishirzi, Hannaneh",
-    booktitle = "Proceedings of the 2023 Conference on Empirical Methods in Natural Language Processing",
+    booktitle = "Proceedings of the 2023 Conference on Empirical
+    Methods in Natural Language Processing",
     year = "2023",
     publisher = "Association for Computational Linguistics",
     doi = "10.18653/v1/2023.emnlp-main.741",
