@@ -148,16 +148,16 @@ def convert_model_to_int8_on_gpu(model: nn.Module, device: str) -> nn.Module:
 
     model.half()
 
-    memory_before_quantization = get_memory_footprint(model)  # without lm_head
+    memory_before_quantization: float = get_memory_footprint(model)  # without lm_head
 
     ـreplace_linear_with_int8linear(model)  # replace `Linear` with `QuantizedLinearInt8`
 
     model.to(device=device)
-    memory_after_quantization = get_memory_footprint(model)  # without lm_head
+    memory_after_quantization: float = get_memory_footprint(model)  # without lm_head
 
     saving = round(100 * memory_after_quantization/memory_before_quantization)
-    memory_before_quantization: float = round(memory_before_quantization / 2**30, 2)  # rounding for printing
-    memory_after_quantization: float = round(memory_after_quantization / 2**30, 2)  # rounding for printing
+    memory_before_quantization = round(memory_before_quantization / 2**30, 2)  # rounding for printing
+    memory_after_quantization = round(memory_after_quantization / 2**30, 2)  # rounding for printing
 
     print(f'Quantization memory - before: {memory_before_quantization} GB, after: {memory_after_quantization} GB ({saving}% of the size before)')
     return model

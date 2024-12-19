@@ -1,5 +1,5 @@
 """OpenAI Model Module."""
-from factscore.lm import LM
+from llments.eval.factscore.lm import LM
 import openai
 import sys
 import time
@@ -108,7 +108,7 @@ def call_ChatGPT(
     max_len: int = 1024,
     temp: float = 0.7,
     verbose: bool = False
-) -> Dict[str, Any]:
+) -> Any | None:
     """Call the OpenAI ChatCompletion API to generate a response based on the input message.
 
     Args:
@@ -119,7 +119,7 @@ def call_ChatGPT(
         verbose (bool, optional): If True, print detailed error information. Defaults to False.
 
     Returns:
-        Dict[str, Any]: The raw response from the OpenAI ChatCompletion API.
+        Any: The raw response from the OpenAI ChatCompletion API.
 
     Raises:
         AssertionError: If an InvalidRequestError occurs, such as when the prompt is too long.
@@ -156,7 +156,7 @@ def call_GPT3(
     num_log_probs: int = 0,
     echo: bool = False,
     verbose: bool = False
-) -> Dict[str, Any]:
+) -> Any | None:
     """Call the OpenAI GPT-3 API to generate a response based on the input prompt.
 
     This function handles API rate limits by implementing an exponential backoff retry mechanism.
@@ -172,7 +172,7 @@ def call_GPT3(
         verbose (bool, optional): If True, print detailed error information. Defaults to False.
 
     Returns:
-        Dict[str, Any]: The raw response from the OpenAI GPT-3 API.
+        Any: The raw response from the OpenAI GPT-3 API.
 
     Raises:
         AssertionError: If an InvalidRequestError occurs, such as when the prompt is too long.

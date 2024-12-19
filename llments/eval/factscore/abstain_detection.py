@@ -1,7 +1,7 @@
 """Abstain Detection Module."""
 import numpy as np
 import re
-from typing import List
+from typing import List, cast
 
 invalid_ppl_mentions: List[str] = [
     "I could not find any information",
@@ -40,7 +40,7 @@ def is_invalid_ppl(text: str) -> bool:
     Returns:
         bool: True if the text starts with any invalid phrase, False otherwise.
     """
-    return np.any([text.lower().startswith(mention.lower()) for mention in invalid_ppl_mentions])
+    return cast(bool, np.any([text.lower().startswith(mention.lower()) for mention in invalid_ppl_mentions]))
 
 def is_invalid_paragraph_ppl(text: str) -> bool:
     """Determine if a paragraph is invalid based on its content.

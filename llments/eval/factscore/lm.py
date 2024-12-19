@@ -36,7 +36,7 @@ class LM(object):
         """
         raise NotImplementedError()
 
-    def generate(
+    def _generate(
         self,
         prompt: str,
         sample_idx: int = 0,
@@ -84,7 +84,7 @@ class LM(object):
         with open(self.cache_file, "wb") as f:
             pickle.dump(self.cache_dict, f)
 
-    def load_cache(self, allow_retry: bool = True) -> Dict[str, Any]:
+    def load_cache(self, allow_retry: bool = True) -> Any:
         """Load the cache from the cache file.
 
         Args:
@@ -92,7 +92,7 @@ class LM(object):
                 Defaults to True.
 
         Returns:
-            Dict[str, Any]: The loaded cache dictionary.
+            Any: The loaded cache dictionary.
 
         Raises:
             Exception: Propagates the exception if `allow_retry` is False and loading fails.

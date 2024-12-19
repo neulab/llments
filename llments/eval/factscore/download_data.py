@@ -5,7 +5,7 @@ import subprocess
 import torch
 import tqdm
 import transformers
-from typing import Tuple
+from typing import Tuple, Dict
 
 def download_file(_id: str, dest: str, cache_dir: str) -> None:
     """Download a file from a given URL or Google Drive ID to the specified destination.
@@ -59,7 +59,7 @@ def download_file(_id: str, dest: str, cache_dir: str) -> None:
             print("Unzip {} ... [Success]".format(dest))
 
 def smart_tokenizer_and_embedding_resize(
-    special_tokens_dict: dict,
+    special_tokens_dict: Dict[str, str],
     tokenizer: transformers.PreTrainedTokenizer,
     model: transformers.PreTrainedModel,
 ) -> None:

@@ -12,8 +12,8 @@ from typing import Optional, Union, List, Tuple
 from transformers import AutoModelForCausalLM
 from transformers import LlamaTokenizer
 
-from factscore.utils import convert_model_to_int8_on_gpu
-from factscore.lm import LM
+from llments.eval.factscore.utils import convert_model_to_int8_on_gpu
+from llments.eval.factscore.lm import LM
 
 class CLM(LM):
     """CLM (Causal Language Model) Class.
@@ -101,7 +101,7 @@ class CLM(LM):
         if verbose:
             input_ids = tqdm(input_ids)
 
-        generations = []
+        generations: List[<str>] = []
         scores = []
         for curr_input_ids in input_ids:
             if len(curr_input_ids) > max_sequence_length - max_output_length:
