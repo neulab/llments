@@ -62,13 +62,15 @@ class DocDB(object):
         """Exit the runtime context and close the database connection."""
         self.close()
 
-    def path(self) -> str:
+    def path(self) -> Optional[str]:
         """Return the path to the file that backs this database.
 
         Returns:
-            str: Path to the SQLite database file.        
+            Optional[str]: Path to the SQLite database file.        
         """
-        filepath = self.path
+        filepath = self.db_path
+        if filepath is None:
+            filepath = "default.db"
         return filepath
 
     def close(self) -> None:
