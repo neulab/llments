@@ -41,7 +41,7 @@ class DocDB(object):
         self.db_path = db_path
         if db_path is None:
             db_path = "default.db"
-        self.connection = sqlite3.connect(self.db_path, check_same_thread=False)
+        self.connection = sqlite3.connect(db_path, check_same_thread=False)
 
         cursor = self.connection.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
@@ -49,7 +49,7 @@ class DocDB(object):
         if len(cursor.fetchall())==0:
             assert data_path is not None, f"{self.db_path} is empty. Specify `data_path` in order to create a DB."
             print (f"{self.db_path} is empty. start building DB from {data_path}...")
-            self.build_db(self.db_path, data_path)
+            self.build_db(db_path, data_path)
 
     def __enter__(self) -> 'DocDB':
         """Enter the runtime context related to this object.
