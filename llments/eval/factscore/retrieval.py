@@ -2,7 +2,7 @@
 import json
 import time
 import os
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 import sqlite3
 import numpy as np
 import pickle as pkl
@@ -39,6 +39,8 @@ class DocDB(object):
             AssertionError: If `data_path` is not provided when the database is empty.
         """
         self.db_path = db_path
+        if db_path is None:
+            db_path = "default.db"
         self.connection = sqlite3.connect(self.db_path, check_same_thread=False)
 
         cursor = self.connection.cursor()
@@ -56,7 +58,7 @@ class DocDB(object):
             DocDB: The DocDB instance itself.
         """
         return self
-    def __exit__(self, *args) -> None:
+    def __exit__(self) -> None:
         """Exit the runtime context and close the database connection."""
         self.close()
 
@@ -66,7 +68,8 @@ class DocDB(object):
         Returns:
             str: Path to the SQLite database file.        
         """
-        return self.path
+        filepath = self.path
+        return filepath
 
     def close(self) -> None:
         """Close the connection to the database."""
@@ -104,7 +107,7 @@ class DocDB(object):
                 titles.add(title)
                 if type(text)==str:
                     text = [text]
-                passages = [[]]
+                passages: List[List[str]] = [[]]
                 for sent_idx, sent in enumerate(text):
                     assert len(sent.strip())>0
                     tokens = tokenizer(sent)["input_ids"]
@@ -299,6 +302,7 @@ class Retrieval(object):
         """
         if self.encoder is None:
             self.load_encoder()
+            assert self.encoder is not None, "Encoder failed to load."
         if topic in self.embed_cache:
             passage_vectors = self.embed_cache[topic]
         else:
@@ -318,7 +322,7 @@ class Retrieval(object):
         topic: str,
         question: str,
         k: int
-    ) -> List[Dict[str, str]]:
+    ) -> List[Dict[str, Any]]:
         """Retrieve top-k passages based on the topic and question using the specified retrieval method.
 
         Args:
@@ -327,7 +331,7 @@ class Retrieval(object):
             k (int): Number of top passages to retrieve.
 
         Returns:
-            List[Dict[str, str]]: List of top-k retrieved passages.
+            List[Dict[str, Any]]: List of top-k retrieved passages.
         """
         retrieval_query = topic + " " + question.strip()
         cache_key = topic + "#" + retrieval_query
@@ -340,6 +344,4 @@ class Retrieval(object):
                 self.cache[cache_key] = self.get_gtr_passages(topic, retrieval_query, passages, k)
             assert len(self.cache[cache_key]) in [k, len(passages)]
             self.add_n += 1
-        
-            
         return self.cache[cache_key]
