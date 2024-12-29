@@ -2,7 +2,7 @@
 import json
 import time
 import os
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, cast
 import sqlite3
 import numpy as np
 import pickle as pkl
@@ -123,7 +123,7 @@ class DocDB(object):
                             passages.append(tokens[offset:offset+MAX_LENGTH])
                             offset += MAX_LENGTH
                 
-                psgs = [tokenizer.decode(tokens) for tokens in passages if np.sum([t not in [0, 2] for t in tokens])>0]
+                psgs = [tokenizer.decode(tokens) for tokens in passages if np.sum([int(t) not in [0, 2] for t in tokens])>0]
                 text = SPECIAL_SEPARATOR.join(psgs)
                 output_lines.append((title, text))
                 tot += 1
@@ -324,7 +324,7 @@ class Retrieval(object):
         topic: str,
         question: str,
         k: int
-    ) -> List[Dict[str, Any]]:
+    ) -> List[Dict[str, str]]:
         """Retrieve top-k passages based on the topic and question using the specified retrieval method.
 
         Args:
@@ -333,7 +333,7 @@ class Retrieval(object):
             k (int): Number of top passages to retrieve.
 
         Returns:
-            List[Dict[str, Any]]: List of top-k retrieved passages.
+            List[Dict[str, str]]: List of top-k retrieved passages.
         """
         retrieval_query = topic + " " + question.strip()
         cache_key = topic + "#" + retrieval_query
@@ -346,4 +346,4 @@ class Retrieval(object):
                 self.cache[cache_key] = self.get_gtr_passages(topic, retrieval_query, passages, k)
             assert len(self.cache[cache_key]) in [k, len(passages)]
             self.add_n += 1
-        return self.cache[cache_key]
+        return cast(List[Dict[str, str]], self.cache[cache_key])
