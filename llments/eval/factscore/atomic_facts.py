@@ -8,7 +8,7 @@ import nltk
 from rank_bm25 import BM25Okapi
 import os
 from nltk.tokenize import sent_tokenize
-from typing import List, Tuple, Optional, Any
+from typing import List, Tuple, Optional, Any, Set
 
 from factscore.openai_lm import OpenAIModel
 
@@ -87,8 +87,8 @@ class AtomicFactGenerator:
                 - List of tuples containing sentences and their corresponding atomic facts.
                 - List of paragraph break indices.
         """
-        sentences = []
-        para_breaks = []
+        sentences: List[str] = []
+        para_breaks: List[int] =  []
         for para_idx, paragraph in enumerate(paragraphs):
             if para_idx > 0 :
                 para_breaks.append(len(sentences))
@@ -115,7 +115,7 @@ class AtomicFactGenerator:
         else:
             atoms = atoms_or_estimate
 
-        atomic_facts_pairs = []
+        atomic_facts_pairs: List[Tuple[str, List[str]]] = []
         for i, sent in enumerate(sentences):
             if not self.is_bio and ( \
                 (i==0 and (sent.startswith("Sure") or sent.startswith("Here are"))) or \
@@ -287,20 +287,20 @@ def is_date(text: str) -> bool:
             return False
     return True
 
-def extract_numeric_values(text: str) -> set:
+def extract_numeric_values(text: str) -> Set[str]:
     """Extract all unique numeric values from the text.
 
     Args:
         text (str): The input text.
 
     Returns:
-        set: A set of unique numeric string values found in the text.
+        Set[str]: A set of unique numeric string values found in the text.
     """
     pattern = r'\b\d+\b'  # regular expression pattern for integers
     numeric_values = re.findall(pattern, text)  # find all numeric values in the text
     return set([value for value in numeric_values])  # convert the values to float and return as a list
 
-def detect_entities(text: str, nlp: spacy.lang.en.English) -> set:
+def detect_entities(text: str, nlp: spacy.lang.en.English) -> Set[str]:
     """Detect relevant entities in the text using spaCy's NLP model.
 
     Args:
@@ -308,12 +308,20 @@ def detect_entities(text: str, nlp: spacy.lang.en.English) -> set:
         nlp (spacy.lang.en.English): The spaCy NLP model.
 
     Returns:
-        set: A set of detected entity strings.
+        Set[str]: A set of detected entity strings.
     """
     doc = nlp(text)
     entities = set()
 
-    def _add_to_entities(text):
+    def _add_to_entities(text: str) -> None:
+        """Add text to the entities set, splitting by hyphens if present.
+
+        If the input text contains hyphens, split it into separate entities.
+        Otherwise, add the text directly to the entities set.
+
+        Args:
+            text (str): The text to add to entities.
+        """
         if "-" in text:
             for _text in text.split("-"):
                 entities.add(_text.strip())
@@ -357,9 +365,9 @@ def postprocess_atomic_facts(
     verbs = ["born.", " appointed.", " characterized.", " described.", " known.", " member.", " advocate.", "served.", "elected."]
     permitted_verbs = ["founding member."]
 
-    atomic_facts = []
-    new_atomic_facts = []
-    new_para_breaks = []
+    atomic_facts: List[Tuple[str, List[str]]] = []
+    new_atomic_facts: List[Tuple[str, List[str]]] = []
+    new_para_breaks: List[int] = []
 
     for i, (sent, facts) in enumerate(_atomic_facts):
         sent = sent.strip()
@@ -483,7 +491,7 @@ def fix_sentence_splitter(curr_sentences: List[str], initials: List[str]) -> Lis
 
 def main() -> None:
     """Main function to demonstrate the usage of AtomicFactGenerator."""
-    generator = AtomicFactGenerator("api.key", "demos", gpt3_cache_dir=None)
+    generator = AtomicFactGenerator("api.key", "demos", gpt3_cache_file=None)
     atomic_facts, para_breaks = generator.run("Thierry Henry (born 17 August 1977) is a French professional football coach, pundit, and former player. He is considered one of the greatest strikers of all time, and one the greatest players of the Premier League history. He has been named Arsenal F.C's greatest ever player.\n\nHenry made his professional debut with Monaco in 1994 before signing for defending Serie A champions Juventus. However, limited playing time, coupled with disagreements with the club's hierarchy, led to him signing for Premier League club Arsenal for £11 million in 1999.")
 
     print(atomic_facts)
