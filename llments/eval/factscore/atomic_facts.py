@@ -198,7 +198,7 @@ class AtomicFactGenerator:
             return atoms
 
 
-def best_demos(query: str, bm25: BM25Okapi, demons_sents: List[str], k: int) -> :
+def best_demos(query: str, bm25: BM25Okapi, demons_sents: List[str], k: int) -> List[str]:
     """Retrieve the top matching demons for a given query using BM25.
 
     Args:
