@@ -8,7 +8,7 @@ import nltk
 from rank_bm25 import BM25Okapi
 import os
 from nltk.tokenize import sent_tokenize
-from typing import List, Tuple, Optional, Any, Set, cast
+from typing import List, Tuple, Optional, Any, Set, Sequence, cast
 
 from factscore.openai_lm import OpenAIModel
 
