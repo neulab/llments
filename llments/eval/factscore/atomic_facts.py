@@ -8,7 +8,7 @@ import nltk
 from rank_bm25 import BM25Okapi
 import os
 from nltk.tokenize import sent_tokenize
-from typing import List, Tuple, Optional, Any, Set
+from typing import List, Tuple, Optional, Any, Set, cast
 
 from factscore.openai_lm import OpenAIModel
 
@@ -111,7 +111,7 @@ class AtomicFactGenerator:
                             (i==len(sentences)-1 and (sent.startswith("Please") or sent.startswith("I hope") or sent.startswith("Here are")))))], cost_estimate=cost_estimate)
 
         if cost_estimate:
-            return atoms_or_estimate
+            return cast(Tuple[List[Tuple[str, List[str]]], List[int]], atoms_or_estimate)
         else:
             atoms = atoms_or_estimate
 
@@ -198,7 +198,7 @@ class AtomicFactGenerator:
             return atoms
 
 
-def best_demos(query: str, bm25: BM25Okapi, demons_sents: List[str], k: int) -> List[str]:
+def best_demos(query: str, bm25: BM25Okapi, demons_sents: List[str], k: int) -> :
     """Retrieve the top matching demons for a given query using BM25.
 
     Args:
@@ -212,7 +212,7 @@ def best_demos(query: str, bm25: BM25Okapi, demons_sents: List[str], k: int) -> 
     """
     tokenized_query = query.split(" ")
     top_machings = bm25.get_top_n(tokenized_query, demons_sents, k)
-    return top_machings
+    return cast(List[str], top_machings) 
 
 def text_to_sentences(text: str) -> List[str]:
     """Transform InstructGPT output into a list of sentences.
@@ -267,7 +267,7 @@ def is_num(text: str) -> bool:
         bool: True if the text is an integer, False otherwise.
     """
     try:
-        text = int(text)
+        int(text)
         return True
     except Exception:
         return False
@@ -365,7 +365,7 @@ def postprocess_atomic_facts(
     verbs = ["born.", " appointed.", " characterized.", " described.", " known.", " member.", " advocate.", "served.", "elected."]
     permitted_verbs = ["founding member."]
 
-    atomic_facts: List[Tuple[str, List[str]]] = []
+    atomic_facts: List[List[Sequence[str]]] = []
     new_atomic_facts: List[Tuple[str, List[str]]] = []
     new_para_breaks: List[int] = []
 
@@ -429,7 +429,7 @@ def is_integer(s: str) -> bool:
         bool: True if the string is an integer, False otherwise.
     """
     try:
-        s = int(s)
+        int(s)
         return True
     except Exception:
         return False
