@@ -67,7 +67,7 @@ class CLM(LM):
         sample_idx: int = 0,
         max_sequence_length: int = 2048,
         max_output_length: int = 128,
-        prompts: Union[str, List[str]] = None,
+        prompts: Optional[Union[str, List[str]]] = None,
         end_if_newline: bool = False,
         end_if_second_newline: bool = False,
         verbose: bool = False,
