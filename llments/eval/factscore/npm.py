@@ -192,18 +192,18 @@ class NPM(LM):
         Raises:
             AssertionError: If input assumptions are violated.
         """
-        passages = self.bm25.get_passages(topic, question, k=3)
-        passages = [p["text"].strip() for p in passages]
+        passages_2 = self.bm25.get_passages(topic, question, k=3)
+        passages = [p["text"].strip() for p in passages_2]
         cache_key = question + "#" + "#".join(passages)
         if cache_key not in self.cache_dict:
-            encoded = cast(List[Tuple[List[int], List[np.ndarray]]], self.encode(passages, skip_special_tokens=True))
+            encoded = self.encode(passages, skip_special_tokens=True)
             stacked_passage_tokens: List[int] = []
-            stacked_passage_vectors: List[np.ndarray] = []
+            stacked_passage_vectors: np.ndarray = []
             for input_ids, vectors in encoded:
                 stacked_passage_tokens += input_ids
                 if len(vectors)>0:
                     stacked_passage_vectors.extend(vectors)
-            stacked_passage_vectors: np.ndarray  = np.concatenate(stacked_passage_vectors, 0)
+            stacked_passage_vectors = np.concatenate(stacked_passage_vectors, 0)
             
             question_input_ids = self.tokenize(["Fact: " + question], skip_special_tokens=False, padding=False)[0]
             if 2 in question_input_ids:
