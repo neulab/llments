@@ -64,10 +64,10 @@ class CLM(LM):
     def _generate(
         self,
         prompt: str,
-        prompts: Union[str, List[str]],
         sample_idx: int = 0,
         max_sequence_length: int = 2048,
         max_output_length: int = 128,
+        prompts: Union[str, List[str]] = None,
         end_if_newline: bool = False,
         end_if_second_newline: bool = False,
         verbose: bool = False,
@@ -76,12 +76,12 @@ class CLM(LM):
 
         Args:
             prompt (str): The input prompt to generate text from.
-            prompts (Union[str, List[str]]): Single prompt string or a list of prompt strings.
             sample_idx (int, optional): Index to differentiate between samples. Defaults to 0.
             max_sequence_length (int, optional): Maximum length of the input sequence.
                 Defaults to 2048.
             max_output_length (int, optional): Maximum length of the generated output.
                 Defaults to 128.
+            prompts (Union[str, List[str]]): Single prompt string or a list of prompt strings.
             end_if_newline (bool, optional): If True, truncate the generation at the first newline.
                 Defaults to False.
             end_if_second_newline (bool, optional): If True, truncate the generation at the second newline.
