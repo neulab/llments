@@ -196,7 +196,7 @@ class NPM(LM):
         passages = [p["text"].strip() for p in passages_2]
         cache_key = question + "#" + "#".join(passages)
         if cache_key not in self.cache_dict:
-            encoded = self.encode(passages, skip_special_tokens=True)
+            encoded = cast(List[Tuple[List[int], np.ndarray]], self.encode(passages, skip_special_tokens=True))
             stacked_passage_tokens: List[int] = []
             stacked_passage_vectors: np.ndarray = []
             for input_ids, vectors in encoded:
