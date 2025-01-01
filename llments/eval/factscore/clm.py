@@ -63,9 +63,11 @@ class CLM(LM):
 
     def _generate(
         self,
-        prompts: Union[str, List[str]],
+        prompt: str,
+        sample_idx: int = 0,
         max_sequence_length: int = 2048,
         max_output_length: int = 128,
+        prompts: Union[str, List[str]],
         end_if_newline: bool = False,
         end_if_second_newline: bool = False,
         verbose: bool = False,
@@ -73,6 +75,8 @@ class CLM(LM):
         """Generate text based on input prompts using the causal language model.
 
         Args:
+            prompt (str): The input prompt to generate text from.
+            sample_idx (int, optional): Index to differentiate between samples. Defaults to 0.
             prompts (Union[str, List[str]]): Single prompt string or a list of prompt strings.
             max_sequence_length (int, optional): Maximum length of the input sequence.
                 Defaults to 2048.
@@ -93,8 +97,10 @@ class CLM(LM):
         Raises:
             AssertionError: If the lengths of generations, prompts, and scores do not match.
         """
+        assert self.model is not None, "Model has not been loaded. Call load_model() before generating."
+        
         is_single = type(prompts)==str
-        if is_single:
+        if isinstance(prompts, str):
             prompts = [prompts]
 
         input_ids = self.tokenizer(prompts).input_ids
