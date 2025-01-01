@@ -8,7 +8,7 @@ import nltk
 from rank_bm25 import BM25Okapi
 import os
 from nltk.tokenize import sent_tokenize
-from typing import List, Tuple, Optional, Any, Set, Sequence, cast
+from typing import List, Tuple, Optional, Any, Set, cast
 
 from factscore.openai_lm import OpenAIModel
 
@@ -365,7 +365,7 @@ def postprocess_atomic_facts(
     verbs = ["born.", " appointed.", " characterized.", " described.", " known.", " member.", " advocate.", "served.", "elected."]
     permitted_verbs = ["founding member."]
 
-    atomic_facts: List[List[Sequence[str]]] = []
+    atomic_facts: List[Tuple[str, List[str]]] = []
     new_atomic_facts: List[Tuple[str, List[str]]] = []
     new_para_breaks: List[int] = []
 
