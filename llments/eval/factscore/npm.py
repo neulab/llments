@@ -19,7 +19,7 @@ def softmax(x: np.ndarray) -> np.ndarray:
     """
     return(np.exp(x - np.max(x)) / np.exp(x - np.max(x)).sum())
 
-class NPM(cast(type, LM)):
+class NPM(LM):
     """NPM Language Model integrating BM25 retrieval with a masked language model.
 
     This class extends the `LM` base class and provides functionalities to tokenize,
@@ -153,6 +153,8 @@ class NPM(cast(type, LM)):
         if gt_input_ids is not None:
             assert len(texts)==len(gt_input_ids)
         all_input_ids, all_attention_mask = self.tokenize(texts, skip_special_tokens=skip_special_tokens)
+
+        assert self.model is not None, "Model has not been loaded. Call load_model() before generating."
         
         with torch.no_grad():
             outputs = self.model(all_input_ids.cuda(),
@@ -194,13 +196,13 @@ class NPM(cast(type, LM)):
         passages = [p["text"].strip() for p in passages]
         cache_key = question + "#" + "#".join(passages)
         if cache_key not in self.cache_dict:
-            encoded = self.encode(passages, skip_special_tokens=True)
+            encoded = cast(List[Tuple[List[int], List[np.ndarray]]], self.encode(passages, skip_special_tokens=True))
             stacked_passage_tokens: List[int] = []
             stacked_passage_vectors: List[np.ndarray] = []
             for input_ids, vectors in encoded:
                 stacked_passage_tokens += input_ids
                 if len(vectors)>0:
-                    stacked_passage_vectors.append(vectors)
+                    stacked_passage_vectors.extend(vectors)
             stacked_passage_vectors = np.concatenate(stacked_passage_vectors, 0)
             
             question_input_ids = self.tokenize(["Fact: " + question], skip_special_tokens=False, padding=False)[0]
