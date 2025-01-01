@@ -346,27 +346,27 @@ def detect_entities(text: str, nlp: spacy.lang.en.English) -> Set[str]:
     return entities
 
 def postprocess_atomic_facts(
-    _atomic_facts: List[Tuple[str, List[str]]],
+    _atomic_facts: List[List[Union[str, List[str]]]],
     para_breaks: List[int],
     nlp: spacy.lang.en.English,
-) -> Tuple[List[Tuple[str, List[str]]], List[int]]:
+) -> Tuple[List[List[Union[str, List[str]]]], List[int]]:
     """Post-process atomic facts to fix minor issues and ensure consistency.
 
     Args:
-        _atomic_facts (List[Tuple[str, List[str]]]): Initial list of atomic facts.
+        _atomic_facts (List[List[Union[str, List[str]]]]): Initial list of atomic facts.
         para_breaks (List[int]): List of paragraph break indices.
         nlp (spacy.lang.en.English): The spaCy NLP model.
 
     Returns:
-        Tuple[List[Tuple[str, List[str]]], List[int]]:
+        Tuple[List[List[Union[str, List[str]]]], List[int]]:
             - Updated list of atomic facts.
             - Updated list of paragraph break indices.
     """
     verbs = ["born.", " appointed.", " characterized.", " described.", " known.", " member.", " advocate.", "served.", "elected."]
     permitted_verbs = ["founding member."]
 
-    atomic_facts: List[Tuple[str, List[str]]] = []
-    new_atomic_facts: List[Tuple[str, List[str]]] = []
+    atomic_facts: List[List[Union[str, List[str]]]] = []
+    new_atomic_facts: List[List[Union[str, List[str]]]] = []
     new_para_breaks: List[int] = []
 
     for i, (sent, facts) in enumerate(_atomic_facts):
@@ -374,7 +374,7 @@ def postprocess_atomic_facts(
         if len(sent.split())==1 and i not in para_breaks and i > 0:
             assert i not in para_breaks
             atomic_facts[-1][0] += " " + sent
-            atomic_facts[-1][1] += facts
+            atomic_facts[-1][1].extend(facts)
         else:
             if i in para_breaks:
                 new_para_breaks.append(len(atomic_facts))
@@ -415,7 +415,7 @@ def postprocess_atomic_facts(
         except Exception:
             new_facts = facts # there is a bug in spacy entity linker, so just go with the previous facts
 
-        new_atomic_facts.append((sent, new_facts))
+        new_atomic_facts.append([sent, new_facts])
 
     return new_atomic_facts, new_para_breaks
 
