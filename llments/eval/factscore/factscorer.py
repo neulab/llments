@@ -77,9 +77,9 @@ class FactScorer:
         assert model_name in ["retrieval+llama", "retrieval+llama+npm", "retrieval+ChatGPT", "npm", "retrieval+ChatGPT+npm"]
         self.model_name = model_name
 
-        self.db = {}
-        self.retrieval = {}
-        self.npm = {}
+        self.db: Dict[str, DocDB] = {}
+        self.retrieval: Dict[str, Retrieval] = {}
+        self.npm: Dict[str, NPM] = {}
         self.batch_size = batch_size # batch size for retrieval
         self.openai_key = openai_key
         self.abstain_detection_type = abstain_detection_type
@@ -178,13 +178,13 @@ class FactScorer:
         # https://openai.com/pricing
         # if we use gpt-3.5-turbo-instruct, the cost is $0.002 per 1000 tokens
         # if we use gpt-3.5-turbo, the cost is $0.002 per 1000 tokens
-        rate = 0
+        rate = 0.0
         if model == "gpt-3.5-turbo-instruct":
             rate = 0.002
         elif model == "gpt-3.5-turbo":
             rate = 0.002
         else:
-          rate = 0
+          rate = 0.0
 
         total_cost = total_tokens * rate / 1000
 
@@ -243,6 +243,8 @@ class FactScorer:
                                                         gpt3_cache_file=os.path.join(self.cache_dir, "InstructGPT.pkl"))
 
             # estimate the total cost of atomic fact generation
+            assert self.af_generator is not None, "AtomicFactGenerator should be initialized."
+            
             total_words = 0
             for gen in generations:
                 total_words += self.af_generator.run(gen, cost_estimate=self.cost_estimate)
