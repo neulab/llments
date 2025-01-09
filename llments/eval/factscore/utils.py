@@ -54,7 +54,7 @@ def get_memory_footprint(model: nn.Module, return_buffers: bool = True) -> int:
         mem = mem + mem_bufs
     return cast(int, mem)
 
-def ـreplace_linear_with_int8linear(model: nn.Module, modules_to_not_convert: str = "lm_head") -> None:
+def _replace_linear_with_int8linear(model: nn.Module, modules_to_not_convert: str = "lm_head") -> None:
     """Recursively replace all `nn.Linear` layers in a model with `QuantizedLinearInt8`, except for specified modules.
 
     Args:
@@ -66,7 +66,7 @@ def ـreplace_linear_with_int8linear(model: nn.Module, modules_to_not_convert: s
         None
     """
     for name, module in model.named_children():
-        ـreplace_linear_with_int8linear(module, modules_to_not_convert)
+        _replace_linear_with_int8linear(module, modules_to_not_convert)
 
         if isinstance(module, torch.nn.Linear) and name != modules_to_not_convert:
             model._modules[name] = QuantizedLinearInt8(linear_layer=module)
@@ -150,7 +150,7 @@ def convert_model_to_int8_on_gpu(model: nn.Module, device: str) -> nn.Module:
 
     memory_before_quantization: float = get_memory_footprint(model)  # without lm_head
 
-    ـreplace_linear_with_int8linear(model)  # replace `Linear` with `QuantizedLinearInt8`
+    _replace_linear_with_int8linear(model)  # replace `Linear` with `QuantizedLinearInt8`
 
     model.to(device=device)
     memory_after_quantization: float = get_memory_footprint(model)  # without lm_head
