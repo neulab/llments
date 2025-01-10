@@ -25,7 +25,7 @@ class LM(object):
         """
         self.cache_file = cache_file
         self.cache_dict = self.load_cache()
-        self.model = None
+        self.model = ""
         self.add_n = 0
 
     def load_model(self) -> None:
