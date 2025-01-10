@@ -6,7 +6,7 @@ import time
 import os
 import numpy as np
 import logging
-from typing import Optional, List, Tuple, Dict, Any
+from typing import Optional, List, Tuple, Dict, Any, cast
 
 class OpenAIModel(LM):
     """OpenAI Language Model Class.
