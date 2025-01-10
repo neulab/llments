@@ -21,6 +21,7 @@ class OpenAIModel(LM):
         temp (float): Temperature parameter for text generation, controlling randomness.
         save_interval (int): Interval at which the cache is saved to disk.
     """
+    model: str
     def __init__(
         self,
         model_name: str,
@@ -39,6 +40,7 @@ class OpenAIModel(LM):
         self.temp = 0.7
         self.save_interval = 100
         super().__init__(cache_file)
+        self.model = self.model_name
 
     def load_model(self) -> None:
         """Load the OpenAI API key and set the model name.
@@ -54,7 +56,7 @@ class OpenAIModel(LM):
         with open(key_path, 'r') as f:
             api_key = f.readline()
         openai.api_key = api_key.strip()
-        self.model = cast(str, self.model_name)
+        self.model = self.model_name
 
     def _generate(
         self,
