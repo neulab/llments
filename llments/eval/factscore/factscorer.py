@@ -5,7 +5,7 @@ import json
 import numpy as np
 import os
 import logging
-from typing import List, Optional, Dict, Any, Union
+from typing import List, Optional, Dict, Any, Union, cast
 
 from tqdm import tqdm
 from factscore.abstain_detection import is_response_abstained
@@ -281,7 +281,8 @@ class FactScorer:
             total_words = 0
             for topic, generation, facts in zip(topics, generations, atomic_facts):
                 if facts is not None:
-                    total_words += self._get_score(topic, generation, facts, knowledge_source, cost_estimate=self.cost_estimate)
+                    result = self._get_score(topic, generation, facts, knowledge_source, cost_estimate=self.cost_estimate)
+                    total_words += cast(int, result)
 
             self.print_cost_estimates(total_words, task="factscore evaluation", model="gpt-3.5-turbo")
 
@@ -295,7 +296,7 @@ class FactScorer:
             if facts is None:
                 decisions.append(None)
             else:
-                decision = self._get_score(topic, generation, facts, knowledge_source)
+                decision = cast(List[Dict[str, bool]], self._get_score(topic, generation, facts, knowledge_source))
                 score = np.mean([d["is_supported"] for d in decision])
                 
                 if gamma:
