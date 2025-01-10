@@ -39,7 +39,7 @@ class OpenAIModel(LM):
         self.temp = 0.7
         self.save_interval = 100
         super().__init__(cache_file)
-        self.model = self.model_name
+        self.model = self.model_name  # type: ignore
 
     def load_model(self) -> None:
         """Load the OpenAI API key and set the model name.
@@ -55,7 +55,7 @@ class OpenAIModel(LM):
         with open(key_path, 'r') as f:
             api_key = f.readline()
         openai.api_key = api_key.strip()
-        self.model = self.model_name
+        self.model = self.model_name  # type: ignore
 
     def _generate(
         self,
