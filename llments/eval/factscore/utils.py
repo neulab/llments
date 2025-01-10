@@ -72,7 +72,7 @@ def _replace_linear_with_int8linear(model: nn.Module, modules_to_not_convert: st
             model._modules[name] = QuantizedLinearInt8(linear_layer=module)
     return
 
-class QuantizedLinearInt8(Module):
+class QuantizedLinearInt8(Module):  # type: ignore
     """A simple but effictive implmenetion of Int8 quantization for linear layers.
     
     The weights are quantized and stored as Int8, which saves ~50% of the gpu memory.
