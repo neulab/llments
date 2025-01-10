@@ -24,15 +24,14 @@ class OpenAIModel(LM):
     def __init__(
         self,
         model_name: str,
-        cache_file: Optional[str] = None,
+        cache_file: str,
         key_path: str = "api.key"
     ) -> None:
         """Initialize the OpenAIModel instance.
 
         Args:
             model_name (str): Name of the OpenAI model to use (e.g., "ChatGPT", "InstructGPT").
-            cache_file (Optional[str], optional): Path to the cache file for storing generated outputs.
-                Defaults to None.
+            cache_file (str): Path to the cache file for storing generated outputs.
             key_path (str, optional): Path to the file containing the OpenAI API key. Defaults to "api.key".
         """
         self.model_name = model_name
@@ -55,13 +54,14 @@ class OpenAIModel(LM):
         with open(key_path, 'r') as f:
             api_key = f.readline()
         openai.api_key = api_key.strip()
-        self.model = self.model_name
+        self.model = cast(str, self.model_name)
 
     def _generate(
         self,
         prompt: str,
+        sample_idx: int = 0,
         max_sequence_length: int = 2048,
-        max_output_length: int = 128
+        max_output_length: int = 128,
     ) -> Tuple[str, Dict[str, Any]]:
         """Generate text using the OpenAI API based on the input prompt.
 
@@ -70,6 +70,7 @@ class OpenAIModel(LM):
 
         Args:
             prompt (str): The input prompt for text generation.
+            sample_idx (int, optional): Index to differentiate between samples. Defaults to 0.
             max_sequence_length (int, optional): Maximum length of the input sequence. Defaults to 2048.
             max_output_length (int, optional): Maximum length of the generated output. Defaults to 128.
 
@@ -89,7 +90,8 @@ class OpenAIModel(LM):
             # Call API
             response = call_ChatGPT(message, temp=self.temp, max_len=max_sequence_length)
             # Get the output from the response
-            output = response["choices"][0]["message"]["content"]
+            assert response is not None, "API response is None"
+            output = cast(str,response["choices"][0]["message"]["content"])
             return output, response
         elif self.model_name == "InstructGPT":
             # Call API
@@ -97,6 +99,7 @@ class OpenAIModel(LM):
             # Call API
             response = call_ChatGPT(message, temp=self.temp, max_len=max_sequence_length)
             # Get the output from the response
+            assert response is not None, "API response is None"
             output = response["choices"][0]["message"]["content"]
             return output, response
         else:
@@ -108,7 +111,7 @@ def call_ChatGPT(
     max_len: int = 1024,
     temp: float = 0.7,
     verbose: bool = False
-) -> Any | None:
+) -> Dict[str, Any] | None:
     """Call the OpenAI ChatCompletion API to generate a response based on the input message.
 
     Args:
@@ -119,7 +122,7 @@ def call_ChatGPT(
         verbose (bool, optional): If True, print detailed error information. Defaults to False.
 
     Returns:
-        Any: The raw response from the OpenAI ChatCompletion API.
+        Dict[str, Any]: The raw response from the OpenAI ChatCompletion API.
 
     Raises:
         AssertionError: If an InvalidRequestError occurs, such as when the prompt is too long.
