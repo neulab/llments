@@ -21,7 +21,6 @@ class OpenAIModel(LM):
         temp (float): Temperature parameter for text generation, controlling randomness.
         save_interval (int): Interval at which the cache is saved to disk.
     """
-    model: str
     def __init__(
         self,
         model_name: str,
